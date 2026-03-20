@@ -108,15 +108,19 @@ export async function scrapeLinkedInPosts(
   );
   const items: ApifyDatasetItem[] = await datasetRes.json();
 
-  if (!items.length) {
+  // Filter out non-post items (e.g. type: "document" wrappers)
+  const postItems = items.filter((item) => {
+    if ((item as Record<string, unknown>).type === "document") return false;
+    const text = item.text || item.content;
+    return typeof text === "string" && text.trim().length > 0;
+  });
+
+  if (!postItems.length) {
     throw new Error("No posts found for this LinkedIn profile");
   }
 
-  // Log raw first item so we can see exact field names from Apify
-  console.log("APIFY RAW FIRST ITEM:", JSON.stringify(items[0], null, 2));
-
-  // Extract author info from first item — handle multiple field name variants
-  const firstItem = items[0];
+  // Extract author info from first valid post item
+  const firstItem = postItems[0];
   const authorObj = firstItem.author;
 
   const authorName =
@@ -144,8 +148,7 @@ export async function scrapeLinkedInPosts(
   };
 
   // Extract posts — handle multiple field name variants for engagement
-  const posts: ScrapedPost[] = items
-    .filter((item) => item.text || item.content)
+  const posts: ScrapedPost[] = postItems
     .map((item) => ({
       content: (item.text || item.content || "").trim(),
       url: item.url || "",

@@ -21,12 +21,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Fetch posts for this profile
+    // Fetch top 30 posts by reactions for analysis (limits Claude API payload)
     const { data: posts, error: postsError } = await supabase
       .from("posts")
       .select("*")
       .eq("profile_id", profile_id)
-      .order("reactions_count", { ascending: false });
+      .order("reactions_count", { ascending: false })
+      .limit(30);
 
     if (postsError) {
       throw new Error(`Failed to fetch posts: ${postsError.message}`);
