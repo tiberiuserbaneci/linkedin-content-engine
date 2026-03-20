@@ -4,10 +4,13 @@ import { scrapeLinkedInPosts } from "@/lib/apify";
 import type { Category } from "@/lib/database.types";
 
 export async function POST(request: NextRequest) {
-  // Temporary debug: verify APIFY_TOKEN is loaded
+  // Temporary debug: verify all env vars are loaded
   return NextResponse.json({
-    error: "debug",
-    token_preview: process.env.APIFY_TOKEN?.substring(0, 8) ?? "NOT SET",
+    debug: {
+      supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) ?? "NOT SET",
+      service_key: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 10) ?? "NOT SET",
+      apify_token: process.env.APIFY_TOKEN?.substring(0, 10) ?? "NOT SET",
+    },
   });
 
   try {
