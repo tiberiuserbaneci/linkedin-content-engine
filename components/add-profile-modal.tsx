@@ -46,12 +46,16 @@ export function AddProfileModal({ isOpen, onClose, onComplete }: AddProfileModal
         }),
       });
 
+      const scrapeData = await scrapeRes.json();
+
       if (!scrapeRes.ok) {
-        const data = await scrapeRes.json();
-        throw new Error(data.error || "Failed to scrape");
+        throw new Error(scrapeData.error || "Failed to scrape");
       }
 
-      const { profile_id } = await scrapeRes.json();
+      const profile_id = scrapeData.profile_id;
+      if (!profile_id) {
+        throw new Error("Scrape succeeded but no profile_id returned");
+      }
 
       // Step 2: Analyze
       setStep("analyzing");
