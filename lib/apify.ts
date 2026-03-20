@@ -55,6 +55,20 @@ export interface ScrapedAuthor {
   followers_count: number;
 }
 
+function parseDate(val: unknown): string | null {
+  if (!val) return null;
+  if (typeof val === "number") {
+    // Unix timestamp — could be seconds or milliseconds
+    const ts = val < 1e12 ? val * 1000 : val;
+    return new Date(ts).toISOString();
+  }
+  if (typeof val === "string" && val.trim()) {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  return null;
+}
+
 export async function scrapeLinkedInPosts(
   linkedinUrl: string,
   maxPosts: number = 50
@@ -119,13 +133,33 @@ export async function scrapeLinkedInPosts(
     throw new Error("No posts found for this LinkedIn profile");
   }
 
-  // Extract author info from first valid post item
-  const firstItem = postItems[0];
-  const authorObj = firstItem.author;
-  const raw = firstItem as Record<string, unknown>;
+  // Extract author from ALL items (including document-type wrappers that may have author data)
+  // Try each item until we find one with author info
+  function extractAuthorFromItem(item: ApifyDatasetItem): { authorObj: ApifyDatasetItem["author"]; raw: Record<string, unknown> } | null {
+    const r = item as Record<string, unknown>;
+    const a = item.author;
+    if (a?.name || a?.firstName || a?.followersCount || a?.followerCount || r.authorName || r.fullName) {
+      return { authorObj: a, raw: r };
+    }
+    return null;
+  }
+
+  // Check ALL items first (unfiltered), then fall back to filtered post items
+  let authorSource: { authorObj: ApifyDatasetItem["author"]; raw: Record<string, unknown> } | null = null;
+  for (const item of items) {
+    authorSource = extractAuthorFromItem(item);
+    if (authorSource) break;
+  }
+  if (!authorSource) {
+    authorSource = { authorObj: postItems[0].author, raw: postItems[0] as Record<string, unknown> };
+  }
+
+  const { authorObj, raw } = authorSource;
 
   // Log raw author fields for debugging
   console.log("APIFY AUTHOR FIELDS:", JSON.stringify({
+    itemCount: items.length,
+    postItemCount: postItems.length,
     author: authorObj,
     topLevel: {
       authorName: raw.authorName,
@@ -173,7 +207,7 @@ export async function scrapeLinkedInPosts(
     .map((item) => ({
       content: (item.text || item.content || "").trim(),
       url: item.url || "",
-      published_at: item.postedAt || (item as Record<string, unknown>).publishedAt as string || (item as Record<string, unknown>).date as string || null,
+      published_at: parseDate(item.postedAt || (item as Record<string, unknown>).publishedAt || (item as Record<string, unknown>).date),
       reactions_count: item.reactionsCount ?? item.numLikes ?? 0,
       comments_count: item.commentsCount ?? item.numComments ?? 0,
       shares_count: item.sharesCount ?? item.numShares ?? 0,

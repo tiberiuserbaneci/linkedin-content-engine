@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Post, ContentAnalysis, ContentIdea, PatternMatch } from "./database.types";
+import type { ContentAnalysis, ContentIdea, PatternMatch } from "./database.types";
 
 const MODEL = "claude-sonnet-4-20250514";
 
@@ -176,40 +176,17 @@ export async function analyzeProfile(
   };
 }
 
-const IDEAS_PROMPT = `You are an expert LinkedIn content strategist. Based on the Winning Content Profile below, generate 10 content ideas calibrated to this creator's winning patterns.
+const IDEAS_PROMPT_FAST = `Generate 10 LinkedIn content ideas for a creator whose winning formula is:
 
-IMPORTANT RULES:
-1. First, use the web_search tool to find 3-5 trending topics in the creator's space
-2. Each idea MUST match at least 3 out of 5 pattern types: topic cluster, format, hook style, emotion, specificity level
-3. Each hook_draft must be a REAL, USABLE first sentence (not a placeholder)
-4. Each idea should leverage a trending signal from your research
-
-WINNING CONTENT PROFILE:
+WINNING FORMULA:
 `;
 
-const IDEAS_SCHEMA = `
-Respond with valid JSON:
-{
-  "ideas": [
-    {
-      "position": 1,
-      "title": "Short compelling title",
-      "topic": "The core topic",
-      "pattern_matches": [
-        {"type": "topic", "label": "matching cluster name"},
-        {"type": "format", "label": "matching format"},
-        {"type": "hook", "label": "hook pattern used"},
-        {"type": "emotion", "label": "primary emotion"},
-        {"type": "specificity", "label": "specificity element"}
-      ],
-      "angle": "The unique angle or perspective for this piece",
-      "hook_draft": "The actual first sentence of the post, ready to use",
-      "format": "narrative|how_to|opinion|data_driven",
-      "emotional_register": "The emotional tone",
-      "trending_signal": "Why this is timely - reference to trend found"
-    }
-  ]
-}`;
+const IDEAS_SUFFIX = `
+
+Each idea must have: position (1-10), title, topic, pattern_matches (array of {type, label} where type is one of: topic/format/hook/emotion/specificity), angle, hook_draft (a REAL usable first sentence), format (narrative/how_to/opinion/data_driven), emotional_register, trending_signal.
+
+Respond with ONLY valid JSON, no markdown:
+{"ideas":[{...}]}`;
 
 export async function generateIdeas(
   analysis: ContentAnalysis,
@@ -217,46 +194,27 @@ export async function generateIdeas(
 ): Promise<Omit<ContentIdea, "id" | "analysis_id" | "profile_id" | "created_at">[]> {
   const client = getClient();
 
-  const profileSummary = JSON.stringify(
-    {
-      overview: analysis.overview,
-      topic_clusters: analysis.topic_clusters,
-      hook_formula: analysis.hook_formula,
-      emotional_playbook: analysis.emotional_playbook,
-      winning_format: analysis.winning_format,
-      structural_dna: analysis.structural_dna,
-      specificity: analysis.specificity,
-      close_patterns: analysis.close_patterns,
-      winning_formula: analysis.winning_formula,
-      winning_checklist: analysis.winning_checklist,
-    },
-    null,
-    2
-  );
-
-  const spaceNote = researchSpace
-    ? `\n\nFOCUS AREA FOR TRENDING RESEARCH: ${researchSpace}`
+  // Only send winning_formula + top 3 topic cluster names
+  const topicNames = Array.isArray(analysis.topic_clusters)
+    ? (analysis.topic_clusters as { name: string }[]).slice(0, 3).map((c) => c.name).join(", ")
     : "";
+
+  const spaceNote = researchSpace ? `\nFocus area: ${researchSpace}` : "";
+
+  const prompt =
+    IDEAS_PROMPT_FAST +
+    analysis.winning_formula +
+    `\n\nTop topics: ${topicNames}` +
+    spaceNote +
+    IDEAS_SUFFIX;
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 4000,
-    tools: [
-      {
-        type: "web_search_20250305",
-        name: "web_search",
-        max_uses: 3,
-      },
-    ],
+    max_tokens: 3000,
     messages: [
       {
         role: "user",
-        content:
-          IDEAS_PROMPT +
-          profileSummary +
-          spaceNote +
-          "\n\n" +
-          IDEAS_SCHEMA,
+        content: prompt,
       },
     ],
   });
