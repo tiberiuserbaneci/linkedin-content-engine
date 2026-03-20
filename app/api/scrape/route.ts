@@ -4,7 +4,10 @@ import { scrapeLinkedInPosts } from "@/lib/apify";
 import type { Category } from "@/lib/database.types";
 
 export async function POST(request: NextRequest) {
+  const steps: string[] = [];
+
   try {
+    steps.push("parsing request body");
     const body = await request.json();
     const {
       linkedin_url,
@@ -25,12 +28,26 @@ export async function POST(request: NextRequest) {
     );
     const linkedin_handle = handleMatch?.[1] ?? linkedin_url;
 
-    // Scrape posts via Apify
+    // Step 1: Supabase client init
+    steps.push("creating supabase client");
+    let supabase;
+    try {
+      supabase = createServerClient();
+      steps.push("supabase client created OK");
+    } catch (e) {
+      return NextResponse.json(
+        { error: "Supabase init failed", detail: String(e), steps },
+        { status: 500 }
+      );
+    }
+
+    // Step 2: Scrape posts via Apify
+    steps.push("starting apify scrape");
     const { posts, author } = await scrapeLinkedInPosts(linkedin_url, max_posts);
+    steps.push(`apify scrape done: ${posts.length} posts`);
 
-    const supabase = createServerClient();
-
-    // Upsert profile
+    // Step 3: Upsert profile
+    steps.push("upserting profile to supabase");
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .upsert(
@@ -50,10 +67,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError) {
-      throw new Error(`Failed to save profile: ${profileError?.message}`);
+      return NextResponse.json(
+        { error: `Failed to save profile: ${profileError.message}`, steps },
+        { status: 500 }
+      );
     }
+    steps.push(`profile upserted: ${profile.id}`);
 
-    // Insert posts (skip duplicates)
+    // Step 4: Insert posts (skip duplicates)
+    steps.push("upserting posts to supabase");
     const postRecords = posts.map((post) => ({
       profile_id: profile.id,
       linkedin_post_url: post.url || `${linkedin_url}/post-${Date.now()}-${Math.random()}`,
@@ -67,25 +89,29 @@ export async function POST(request: NextRequest) {
       raw_json: post.raw_json,
     }));
 
-    // Use upsert to skip duplicates
     const { error: postsError } = await supabase
       .from("posts")
       .upsert(postRecords, { onConflict: "linkedin_post_url", ignoreDuplicates: true });
 
     if (postsError) {
-      throw new Error(`Failed to save posts: ${postsError?.message}`);
+      return NextResponse.json(
+        { error: `Failed to save posts: ${postsError.message}`, steps },
+        { status: 500 }
+      );
     }
+    steps.push(`posts upserted: ${posts.length}`);
 
     return NextResponse.json({
       profile_id: profile.id,
       posts_count: posts.length,
       profile,
+      steps,
     });
   } catch (_err) {
     const err = _err as Error;
     console.error("Scrape error:", err.message);
     return NextResponse.json(
-      { error: err.message ?? "Scrape failed" },
+      { error: err.message ?? "Scrape failed", steps },
       { status: 500 }
     );
   }
