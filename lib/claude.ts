@@ -40,6 +40,14 @@ const ANALYSIS_PROMPT = `You are an expert LinkedIn content strategist. Analyse 
 
 Your task: Generate a comprehensive Winning Content Profile with exactly these 10 sections. Be specific, data-driven, and actionable.
 
+CRITICAL RULES FOR HOOK ANALYSIS:
+- For "top_hooks": You MUST copy-paste the EXACT opening line (first sentence) from actual TOP_PERFORMER posts verbatim. Do NOT paraphrase or summarize. Quote them exactly as written.
+- For "patterns": Describe the pattern AND include the EXACT verbatim text from the post that exemplifies it in quotes.
+- For "opening_patterns" in structural_dna: Quote EXACT opening lines from top posts.
+
+CRITICAL RULE FOR EXAMPLE POSTS:
+- Every section (hook_formula, emotional_playbook, winning_format, structural_dna, specificity, close_patterns, what_doesnt_work) MUST include an "example_posts" array with exactly 3 brief post opener suggestions (1-2 sentences each) that follow the winning patterns described in that section. These should be NEW, original suggestions that a creator could use as inspiration.
+
 Respond with valid JSON matching this exact structure:
 {
   "overview": "2-3 sentence summary of this creator's content identity and what makes them unique",
@@ -53,48 +61,55 @@ Respond with valid JSON matching this exact structure:
     }
   ],
   "hook_formula": {
-    "patterns": ["pattern 1 with example", "pattern 2 with example"],
-    "top_hooks": ["actual hook from top posts"],
+    "patterns": ["Pattern name: 'EXACT QUOTED TEXT from post' — explanation of why it works"],
+    "top_hooks": ["EXACT verbatim first sentence copied from a top performing post", "EXACT verbatim first sentence from another top post"],
     "what_works": "summary of effective hook strategies",
-    "what_fails": "summary of ineffective hook strategies"
+    "what_fails": "summary of ineffective hook strategies",
+    "example_posts": ["Example post opener following this hook pattern 1", "Example post opener 2", "Example post opener 3"]
   },
   "emotional_playbook": {
     "primary_emotions": ["emotion1", "emotion2"],
     "emotional_arc": "description of typical emotional journey in posts",
     "top_performer_emotions": ["emotions that drive top posts"],
-    "avoid": ["emotions that underperform"]
+    "avoid": ["emotions that underperform"],
+    "example_posts": ["Example post opener with this emotional register 1", "Example 2", "Example 3"]
   },
   "winning_format": {
     "best_formats": [{"format": "format name", "avg_engagement": 200, "frequency": 0.3}],
     "optimal_length": {"min_words": 100, "max_words": 300, "sweet_spot": 200},
-    "structure_notes": "how the best posts are structured"
+    "structure_notes": "how the best posts are structured",
+    "example_posts": ["Example post opener in winning format 1", "Example 2", "Example 3"]
   },
   "structural_dna": {
-    "opening_patterns": ["how top posts start"],
+    "opening_patterns": ["EXACT verbatim opening line from a top post — explanation"],
     "body_patterns": ["how top posts develop their message"],
     "paragraph_style": "short/medium/long paragraphs",
     "use_of_lists": true,
     "use_of_whitespace": "description",
-    "signature_elements": ["unique structural elements"]
+    "signature_elements": ["unique structural elements"],
+    "example_posts": ["Example post opener following structural DNA 1", "Example 2", "Example 3"]
   },
   "specificity": {
     "data_usage": "how often and how they use numbers/data",
     "story_vs_advice": "ratio and style",
     "personal_vs_general": "how personal the content is",
     "examples_style": "how they use examples",
-    "specificity_score": 8
+    "specificity_score": 8,
+    "example_posts": ["Example post opener with right specificity level 1", "Example 2", "Example 3"]
   },
   "close_patterns": {
     "cta_styles": ["call to action patterns"],
     "question_endings": ["example questions used to close"],
-    "best_performing_closes": ["actual closes from top posts"],
-    "engagement_drivers": "what drives comments"
+    "best_performing_closes": ["EXACT verbatim close from a top post"],
+    "engagement_drivers": "what drives comments",
+    "example_posts": ["Example post with this close pattern 1", "Example 2", "Example 3"]
   },
   "what_doesnt_work": {
     "underperforming_topics": ["topics that get low engagement"],
     "failed_formats": ["formats that don't work for this creator"],
     "common_mistakes": ["patterns seen in low performers"],
-    "avoid_list": ["specific things to avoid"]
+    "avoid_list": ["specific things to avoid"],
+    "example_posts": ["Example of what TO DO instead (corrected version) 1", "Example 2", "Example 3"]
   },
   "winning_formula": "A single paragraph capturing the exact recipe for this creator's best content",
   "winning_checklist": [

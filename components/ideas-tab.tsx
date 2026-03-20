@@ -25,19 +25,99 @@ const FORMAT_LABELS: Record<string, string> = {
   data_driven: "Data-Driven",
 };
 
-interface IdeasTabProps {
-  ideas: ContentIdea[];
-  onStatusChange: (id: string, status: IdeaStatus) => void;
+interface TopPost {
+  id: string;
+  content: string;
+  reactions_count: number;
+  comments_count: number;
+  shares_count: number;
+  linkedin_post_url: string;
+  published_at: string | null;
 }
 
-export function IdeasTab({ ideas, onStatusChange }: IdeasTabProps) {
+interface EngagementStats {
+  total_posts: number;
+  total_reactions: number;
+  total_comments: number;
+  avg_reactions: number;
+  avg_comments: number;
+}
+
+interface IdeasTabProps {
+  ideas: ContentIdea[];
+  onStatusChange: (id: string, status: IdeaStatus) => Promise<void>;
+  engagementStats: EngagementStats | null;
+  topPosts: TopPost[];
+}
+
+export function IdeasTab({ ideas, onStatusChange, engagementStats, topPosts }: IdeasTabProps) {
   return (
     <div className="space-y-4 p-6">
+      {/* Engagement Stats Banner */}
+      {engagementStats && (
+        <div className="bg-[#111111] border border-[#1E1E1E] rounded-xl p-4">
+          <h3 className="text-sm font-medium text-[#F1F1F1] mb-3">Posts Analyzed</h3>
+          <div className="grid grid-cols-5 gap-4">
+            <div>
+              <p className="text-2xl font-semibold text-[#DA4E24]">{engagementStats.total_posts}</p>
+              <p className="text-xs text-[#666]">Posts</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#F1F1F1]">{engagementStats.total_reactions.toLocaleString()}</p>
+              <p className="text-xs text-[#666]">Total Reactions</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#F1F1F1]">{engagementStats.total_comments.toLocaleString()}</p>
+              <p className="text-xs text-[#666]">Total Comments</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#60A5FA]">{engagementStats.avg_reactions}</p>
+              <p className="text-xs text-[#666]">Avg Reactions</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#60A5FA]">{engagementStats.avg_comments}</p>
+              <p className="text-xs text-[#666]">Avg Comments</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top 5 Performing Posts */}
+      {topPosts.length > 0 && (
+        <div className="bg-[#111111] border border-[#1E1E1E] rounded-xl p-5">
+          <h3 className="text-sm font-medium text-[#F1F1F1] mb-3">Top 5 Performing Posts</h3>
+          <div className="space-y-3">
+            {topPosts.map((post, i) => (
+              <div key={post.id} className="bg-[#0A0A0A] rounded-lg p-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-xs font-semibold text-[#DA4E24] mt-0.5">#{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-[#BBB] line-clamp-2">
+                      {post.content.slice(0, 200)}{post.content.length > 200 ? "..." : ""}
+                    </p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-[#666]">
+                      <span className="text-[#FBBF24]">{post.reactions_count.toLocaleString()} reactions</span>
+                      <span>{post.comments_count.toLocaleString()} comments</span>
+                      <span>{post.shares_count.toLocaleString()} shares</span>
+                      {post.published_at && (
+                        <span>{new Date(post.published_at).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {ideas.map((idea) => (
         <IdeaCard
           key={idea.id}
           idea={idea}
           onStatusChange={onStatusChange}
+          avgReactions={engagementStats?.avg_reactions}
+          avgComments={engagementStats?.avg_comments}
         />
       ))}
 
@@ -49,16 +129,23 @@ export function IdeasTab({ ideas, onStatusChange }: IdeasTabProps) {
 function IdeaCard({
   idea,
   onStatusChange,
+  avgReactions,
+  avgComments,
 }: {
   idea: ContentIdea;
-  onStatusChange: (id: string, status: IdeaStatus) => void;
+  onStatusChange: (id: string, status: IdeaStatus) => Promise<void>;
+  avgReactions?: number;
+  avgComments?: number;
 }) {
   const [updating, setUpdating] = useState(false);
 
   async function handleStatus(status: IdeaStatus) {
     setUpdating(true);
-    onStatusChange(idea.id, status);
-    setUpdating(false);
+    try {
+      await onStatusChange(idea.id, status);
+    } finally {
+      setUpdating(false);
+    }
   }
 
   return (
@@ -100,6 +187,11 @@ function IdeaCard({
               {FORMAT_LABELS[idea.format] || idea.format}
             </span>
             <span>{idea.emotional_register}</span>
+            {(avgReactions !== undefined || avgComments !== undefined) && (
+              <span className="text-[#60A5FA]">
+                ~{avgReactions} reactions, ~{avgComments} comments avg
+              </span>
+            )}
             <span className="text-[#999]">{idea.trending_signal}</span>
           </div>
 

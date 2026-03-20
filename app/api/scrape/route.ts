@@ -46,12 +46,44 @@ export async function POST(request: NextRequest) {
     const { posts, author } = await scrapeLinkedInPosts(linkedin_url, max_posts);
     steps.push(`apify scrape done: ${posts.length} posts`);
 
-    // Step 3: Upsert profile
-    steps.push("upserting profile to supabase");
-    const { data: profile, error: profileError } = await supabase
+    // Step 3: Upsert profile (check-then-update/insert to avoid duplicates)
+    steps.push("checking for existing profile");
+    const { data: existing } = await supabase
       .from("profiles")
-      .upsert(
-        {
+      .select("id")
+      .eq("linkedin_url", linkedin_url)
+      .maybeSingle();
+
+    let profile;
+    if (existing) {
+      steps.push(`found existing profile ${existing.id}, updating`);
+      const { data: updated, error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          linkedin_handle,
+          full_name: author.name,
+          headline: author.headline,
+          avatar_url: author.avatar_url,
+          followers_count: author.followers_count,
+          category,
+          scraped_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: `Failed to update profile: ${updateError.message}`, steps },
+          { status: 500 }
+        );
+      }
+      profile = updated;
+    } else {
+      steps.push("no existing profile, inserting new");
+      const { data: inserted, error: insertError } = await supabase
+        .from("profiles")
+        .insert({
           linkedin_url,
           linkedin_handle,
           full_name: author.name,
@@ -60,19 +92,19 @@ export async function POST(request: NextRequest) {
           followers_count: author.followers_count,
           category,
           scraped_at: new Date().toISOString(),
-        },
-        { onConflict: "linkedin_url" }
-      )
-      .select()
-      .single();
+        })
+        .select()
+        .single();
 
-    if (profileError) {
-      return NextResponse.json(
-        { error: `Failed to save profile: ${profileError.message}`, steps },
-        { status: 500 }
-      );
+      if (insertError) {
+        return NextResponse.json(
+          { error: `Failed to insert profile: ${insertError.message}`, steps },
+          { status: 500 }
+        );
+      }
+      profile = inserted;
     }
-    steps.push(`profile upserted: ${profile.id}`);
+    steps.push(`profile saved: ${profile.id}`);
 
     // Step 4: Insert posts (skip duplicates)
     steps.push("upserting posts to supabase");

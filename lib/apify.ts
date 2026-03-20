@@ -19,12 +19,22 @@ interface ApifyDatasetItem {
   reactionsCount?: number;
   commentsCount?: number;
   sharesCount?: number;
+  numLikes?: number;
+  numComments?: number;
+  numShares?: number;
   author?: {
     name?: string;
+    firstName?: string;
+    lastName?: string;
     headline?: string;
     profilePicture?: string;
+    profilePictureUrl?: string;
     followersCount?: number;
+    followerCount?: number;
   };
+  authorName?: string;
+  authorProfilePicture?: string;
+  authorFollowerCount?: number;
   [key: string]: unknown;
 }
 
@@ -102,25 +112,47 @@ export async function scrapeLinkedInPosts(
     throw new Error("No posts found for this LinkedIn profile");
   }
 
-  // Extract author info from first item
+  // Log raw first item so we can see exact field names from Apify
+  console.log("APIFY RAW FIRST ITEM:", JSON.stringify(items[0], null, 2));
+
+  // Extract author info from first item — handle multiple field name variants
   const firstItem = items[0];
+  const authorObj = firstItem.author;
+
+  const authorName =
+    authorObj?.name ||
+    (authorObj?.firstName && authorObj?.lastName
+      ? `${authorObj.firstName} ${authorObj.lastName}`.trim()
+      : null) ||
+    (authorObj?.firstName || null) ||
+    (firstItem.authorName as string | undefined) ||
+    "Unknown";
+
   const author: ScrapedAuthor = {
-    name: firstItem.author?.name || "Unknown",
-    headline: firstItem.author?.headline || null,
-    avatar_url: firstItem.author?.profilePicture || null,
-    followers_count: firstItem.author?.followersCount || 0,
+    name: authorName,
+    headline: authorObj?.headline || null,
+    avatar_url:
+      authorObj?.profilePicture ||
+      authorObj?.profilePictureUrl ||
+      (firstItem.authorProfilePicture as string | undefined) ||
+      null,
+    followers_count:
+      authorObj?.followersCount ||
+      authorObj?.followerCount ||
+      (firstItem.authorFollowerCount as number | undefined) ||
+      0,
   };
 
-  // Extract posts
+  // Extract posts — handle multiple field name variants for engagement
   const posts: ScrapedPost[] = items
     .filter((item) => item.text || item.content)
     .map((item) => ({
       content: (item.text || item.content || "").trim(),
       url: item.url || "",
       published_at: item.postedAt || null,
-      reactions_count: item.reactionsCount || 0,
-      comments_count: item.commentsCount || 0,
-      shares_count: item.sharesCount || 0,
+      reactions_count: item.reactionsCount ?? item.numLikes ?? 0,
+      comments_count: item.commentsCount ?? item.numComments ?? 0,
+      shares_count: item.sharesCount ?? item.numShares ?? 0,
       raw_json: item as Record<string, unknown>,
     }));
 

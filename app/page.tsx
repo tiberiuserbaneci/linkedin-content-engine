@@ -13,6 +13,24 @@ import type {
   IdeaStatus,
 } from "@/lib/database.types";
 
+interface TopPost {
+  id: string;
+  content: string;
+  reactions_count: number;
+  comments_count: number;
+  shares_count: number;
+  linkedin_post_url: string;
+  published_at: string | null;
+}
+
+interface EngagementStats {
+  total_posts: number;
+  total_reactions: number;
+  total_comments: number;
+  avg_reactions: number;
+  avg_comments: number;
+}
+
 type Tab = "ideas" | "profile";
 
 export default function Dashboard() {
@@ -20,6 +38,8 @@ export default function Dashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<ContentAnalysis | null>(null);
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
+  const [topPosts, setTopPosts] = useState<TopPost[]>([]);
+  const [engagementStats, setEngagementStats] = useState<EngagementStats | null>(null);
   const [tab, setTab] = useState<Tab>("ideas");
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -48,13 +68,19 @@ export default function Dashboard() {
         const data = await res.json();
         setAnalysis(data.analysis);
         setIdeas(data.ideas);
+        setTopPosts(data.top_posts || []);
+        setEngagementStats(data.engagement_stats || null);
       } else {
         setAnalysis(null);
         setIdeas([]);
+        setTopPosts([]);
+        setEngagementStats(null);
       }
     } catch {
       setAnalysis(null);
       setIdeas([]);
+      setTopPosts([]);
+      setEngagementStats(null);
     }
   }, []);
 
@@ -86,6 +112,26 @@ export default function Dashboard() {
     }
   }
 
+  async function handleDeleteProfile(profileId: string) {
+    try {
+      const res = await fetch(`/api/profiles/${profileId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setProfiles((prev) => prev.filter((p) => p.id !== profileId));
+        if (selectedId === profileId) {
+          setSelectedId(null);
+          setAnalysis(null);
+          setIdeas([]);
+          setTopPosts([]);
+          setEngagementStats(null);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete profile:", err);
+    }
+  }
+
   const selectedProfile = profiles.find((p) => p.id === selectedId) || null;
 
   return (
@@ -95,6 +141,7 @@ export default function Dashboard() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         onAddProfile={() => setShowModal(true)}
+        onDelete={handleDeleteProfile}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -134,7 +181,12 @@ export default function Dashboard() {
             <div className="flex-1 overflow-y-auto">
               {analysis ? (
                 tab === "ideas" ? (
-                  <IdeasTab ideas={ideas} onStatusChange={handleStatusChange} />
+                  <IdeasTab
+                    ideas={ideas}
+                    onStatusChange={handleStatusChange}
+                    engagementStats={engagementStats}
+                    topPosts={topPosts}
+                  />
                 ) : (
                   <WinningProfileTab analysis={analysis} />
                 )
