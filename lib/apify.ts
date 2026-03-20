@@ -122,15 +122,29 @@ export async function scrapeLinkedInPosts(
   // Extract author info from first valid post item
   const firstItem = postItems[0];
   const authorObj = firstItem.author;
+  const raw = firstItem as Record<string, unknown>;
+
+  // Log raw author fields for debugging
+  console.log("APIFY AUTHOR FIELDS:", JSON.stringify({
+    author: authorObj,
+    topLevel: {
+      authorName: raw.authorName,
+      fullName: raw.fullName,
+      followerCount: raw.followerCount,
+      followersCount: raw.followersCount,
+      followers: raw.followers,
+      connectionsCount: raw.connectionsCount,
+    },
+  }));
 
   const authorName =
     authorObj?.name ||
-    (firstItem as Record<string, unknown>).fullName as string | undefined ||
+    (raw.fullName as string | undefined) ||
     (authorObj?.firstName && authorObj?.lastName
       ? `${authorObj.firstName} ${authorObj.lastName}`.trim()
       : null) ||
     (authorObj?.firstName || null) ||
-    (firstItem.authorName as string | undefined) ||
+    (raw.authorName as string | undefined) ||
     "Unknown";
 
   const author: ScrapedAuthor = {
@@ -139,13 +153,18 @@ export async function scrapeLinkedInPosts(
     avatar_url:
       authorObj?.profilePicture ||
       authorObj?.profilePictureUrl ||
-      (firstItem.authorProfilePicture as string | undefined) ||
+      (raw.authorProfilePicture as string | undefined) ||
       null,
     followers_count:
       authorObj?.followerCount ||
       authorObj?.followersCount ||
-      (firstItem.authorFollowerCount as number | undefined) ||
-      (firstItem as Record<string, unknown>).followerCount as number | undefined ||
+      (authorObj as Record<string, unknown> | undefined)?.followers as number | undefined ||
+      (authorObj as Record<string, unknown> | undefined)?.connectionsCount as number | undefined ||
+      (raw.authorFollowerCount as number | undefined) ||
+      (raw.followerCount as number | undefined) ||
+      (raw.followersCount as number | undefined) ||
+      (raw.followers as number | undefined) ||
+      (raw.connectionsCount as number | undefined) ||
       0,
   };
 
@@ -154,7 +173,7 @@ export async function scrapeLinkedInPosts(
     .map((item) => ({
       content: (item.text || item.content || "").trim(),
       url: item.url || "",
-      published_at: item.postedAt || null,
+      published_at: item.postedAt || (item as Record<string, unknown>).publishedAt as string || (item as Record<string, unknown>).date as string || null,
       reactions_count: item.reactionsCount ?? item.numLikes ?? 0,
       comments_count: item.commentsCount ?? item.numComments ?? 0,
       shares_count: item.sharesCount ?? item.numShares ?? 0,

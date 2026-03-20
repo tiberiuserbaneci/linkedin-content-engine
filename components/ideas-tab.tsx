@@ -97,6 +97,9 @@ export function IdeasTab({ ideas, onStatusChange, engagementStats, topPosts, all
                 <div className="flex items-start gap-3">
                   <span className="text-xs font-semibold text-[#DA4E24] mt-0.5">#{i + 1}</span>
                   <div className="flex-1 min-w-0">
+                    {post.published_at && (
+                      <p className="text-xs text-[#666] mb-1">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                    )}
                     <p className="text-sm text-[#BBB] line-clamp-2">
                       {post.content.slice(0, 200)}{post.content.length > 200 ? "..." : ""}
                     </p>
@@ -104,9 +107,6 @@ export function IdeasTab({ ideas, onStatusChange, engagementStats, topPosts, all
                       <span className="text-[#FBBF24]">{post.reactions_count.toLocaleString()} reactions</span>
                       <span>{post.comments_count.toLocaleString()} comments</span>
                       <span>{post.shares_count.toLocaleString()} shares</span>
-                      {post.published_at && (
-                        <span>{new Date(post.published_at).toLocaleDateString()}</span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -276,13 +276,13 @@ function AllPostsList({ posts }: { posts: PostItem[] }) {
           {displayPosts.map((post) => (
             <div key={post.id} className="bg-[#0A0A0A] rounded-lg p-3 flex items-start gap-3">
               <div className="flex-1 min-w-0">
+                {post.published_at && (
+                  <p className="text-xs text-[#666] mb-1">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                )}
                 <p className="text-sm text-[#BBB]">
                   {post.content.slice(0, 150)}{post.content.length > 150 ? "..." : ""}
                 </p>
                 <div className="flex items-center gap-4 mt-2 text-xs text-[#666]">
-                  {post.published_at && (
-                    <span>{new Date(post.published_at).toLocaleDateString()}</span>
-                  )}
                   <span className="text-[#DA4E24]">{post.reactions_count.toLocaleString()} reactions</span>
                   <span>{post.comments_count.toLocaleString()} comments</span>
                   <span>{post.shares_count.toLocaleString()} shares</span>
