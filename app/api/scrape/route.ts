@@ -4,6 +4,12 @@ import { scrapeLinkedInPosts } from "@/lib/apify";
 import type { Category } from "@/lib/database.types";
 
 export async function POST(request: NextRequest) {
+  // Temporary debug: verify APIFY_TOKEN is loaded
+  return NextResponse.json({
+    error: "debug",
+    token_preview: process.env.APIFY_TOKEN?.substring(0, 8) ?? "NOT SET",
+  });
+
   try {
     const body = await request.json();
     const {
