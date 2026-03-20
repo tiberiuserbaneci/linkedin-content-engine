@@ -26,7 +26,7 @@ function tierPosts(posts: LightPost[]): TieredPost[] {
   const bottom30 = Math.floor(sorted.length * 0.3);
 
   return sorted.map((post, i) => ({
-    content: post.content.slice(0, 500),
+    content: post.content.slice(0, 300),
     reactions: post.reactions_count,
     comments: post.comments_count,
     tier:
@@ -138,7 +138,7 @@ export async function analyzeProfile(
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 8000,
+    max_tokens: 4000,
     messages: [
       {
         role: "user",
@@ -240,12 +240,12 @@ export async function generateIdeas(
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 8000,
+    max_tokens: 4000,
     tools: [
       {
         type: "web_search_20250305",
         name: "web_search",
-        max_uses: 5,
+        max_uses: 3,
       },
     ],
     messages: [

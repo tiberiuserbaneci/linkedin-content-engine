@@ -9,12 +9,13 @@ interface AddProfileModalProps {
   onComplete: () => void;
 }
 
-type LoadingStep = "idle" | "scraping" | "analyzing" | "done" | "error";
+type LoadingStep = "idle" | "scraping" | "building_profile" | "generating_ideas" | "done" | "error";
 
 const LOADING_MESSAGES: Record<LoadingStep, string> = {
   idle: "",
-  scraping: "Scraping posts...",
-  analyzing: "Analysing patterns & generating ideas...",
+  scraping: "Step 1/3: Scraping posts...",
+  building_profile: "Step 2/3: Building winning profile...",
+  generating_ideas: "Step 3/3: Generating ideas...",
   done: "Complete!",
   error: "Something went wrong",
 };
@@ -46,31 +47,48 @@ export function AddProfileModal({ isOpen, onClose, onComplete }: AddProfileModal
         }),
       });
 
-      const scrapeData = await scrapeRes.json();
-
       if (!scrapeRes.ok) {
-        throw new Error(JSON.stringify(scrapeData, null, 2));
+        const scrapeData = await scrapeRes.json().catch(() => ({ error: "Scrape failed" }));
+        throw new Error(scrapeData.error || "Scrape failed");
       }
 
+      const scrapeData = await scrapeRes.json();
       const profile_id = scrapeData.profile_id;
       if (!profile_id) {
-        throw new Error("No profile_id in response: " + JSON.stringify(scrapeData, null, 2));
+        throw new Error("No profile_id returned from scrape");
       }
 
-      // Step 2: Analyze
-      setStep("analyzing");
-      const analyzeRes = await fetch("/api/analyze", {
+      // Step 2: Build winning profile (no ideas)
+      setStep("building_profile");
+      const profileRes = await fetch("/api/analyze/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id }),
+      });
+
+      if (!profileRes.ok) {
+        const data = await profileRes.json().catch(() => ({ error: "Profile analysis failed" }));
+        throw new Error(data.error || "Failed to build winning profile");
+      }
+
+      const profileData = await profileRes.json();
+      const analysis_id = profileData.analysis_id;
+
+      // Step 3: Generate ideas
+      setStep("generating_ideas");
+      const ideasRes = await fetch("/api/analyze/ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          analysis_id,
           profile_id,
           research_space: researchSpace || undefined,
         }),
       });
 
-      if (!analyzeRes.ok) {
-        const data = await analyzeRes.json();
-        throw new Error(data.error || "Failed to analyze");
+      if (!ideasRes.ok) {
+        const data = await ideasRes.json().catch(() => ({ error: "Ideas generation failed" }));
+        throw new Error(data.error || "Failed to generate ideas");
       }
 
       setStep("done");
@@ -86,7 +104,9 @@ export function AddProfileModal({ isOpen, onClose, onComplete }: AddProfileModal
     }
   }
 
-  const isLoading = step === "scraping" || step === "analyzing";
+  const isLoading = step === "scraping" || step === "building_profile" || step === "generating_ideas";
+
+  const stepNumber = step === "scraping" ? 1 : step === "building_profile" ? 2 : step === "generating_ideas" ? 3 : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -161,17 +181,26 @@ export function AddProfileModal({ isOpen, onClose, onComplete }: AddProfileModal
           </div>
 
           {error && (
-            <div className="text-red-400 text-sm bg-red-400/10 rounded-lg px-3 py-2">
+            <div className="text-red-400 text-sm bg-red-400/10 rounded-lg px-3 py-2 max-h-32 overflow-y-auto">
               {error}
             </div>
           )}
 
           {isLoading ? (
-            <div className="flex items-center gap-3 py-3">
-              <div className="w-5 h-5 border-2 border-[#DA4E24] border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#999]">
-                {LOADING_MESSAGES[step]}
-              </span>
+            <div className="space-y-3 py-2">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-[#DA4E24] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-[#F1F1F1]">
+                  {LOADING_MESSAGES[step]}
+                </span>
+              </div>
+              {/* Progress bar */}
+              <div className="w-full bg-[#1E1E1E] rounded-full h-1.5">
+                <div
+                  className="bg-[#DA4E24] h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${(stepNumber / 3) * 100}%` }}
+                />
+              </div>
             </div>
           ) : (
             <button

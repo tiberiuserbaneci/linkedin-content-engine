@@ -116,6 +116,30 @@ export default function Dashboard() {
     }
   }
 
+  async function handleRefreshProfile(profileId: string) {
+    const profile = profiles.find((p) => p.id === profileId);
+    if (!profile) return;
+    try {
+      const res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          linkedin_url: profile.linkedin_url,
+          category: profile.category,
+          max_posts: 50,
+        }),
+      });
+      if (res.ok) {
+        await fetchProfiles();
+        if (selectedId === profileId) {
+          fetchAnalysis(profileId);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to refresh profile:", err);
+    }
+  }
+
   async function handleDeleteProfile(profileId: string) {
     try {
       const res = await fetch(`/api/profiles/${profileId}`, {
@@ -147,6 +171,7 @@ export default function Dashboard() {
         onSelect={setSelectedId}
         onAddProfile={() => setShowModal(true)}
         onDelete={handleDeleteProfile}
+        onRefresh={handleRefreshProfile}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
