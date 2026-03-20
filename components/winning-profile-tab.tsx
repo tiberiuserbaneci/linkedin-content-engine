@@ -1,12 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import type { ContentAnalysis, TopicCluster } from "@/lib/database.types";
+import { GeneratePostModal } from "./generate-post-modal";
 
 interface WinningProfileTabProps {
   analysis: ContentAnalysis;
+  winningFormula: string;
 }
 
-export function WinningProfileTab({ analysis }: WinningProfileTabProps) {
+export function WinningProfileTab({ analysis, winningFormula }: WinningProfileTabProps) {
+  const [variationModal, setVariationModal] = useState<string | null>(null);
+
   return (
     <div className="space-y-6 p-6">
       {/* Winning Formula - Prominent */}
@@ -67,44 +72,59 @@ export function WinningProfileTab({ analysis }: WinningProfileTabProps) {
       {/* Hook Formula */}
       <Section title="Hook Formula">
         <JsonSection data={analysis.hook_formula as Record<string, unknown>} />
-        <ExamplePosts data={analysis.hook_formula as Record<string, unknown>} />
+        <ExamplePosts data={analysis.hook_formula as Record<string, unknown>} onGenerate={setVariationModal} />
       </Section>
 
       {/* Emotional Playbook */}
       <Section title="Emotional Playbook">
         <JsonSection data={analysis.emotional_playbook as Record<string, unknown>} />
-        <ExamplePosts data={analysis.emotional_playbook as Record<string, unknown>} />
+        <ExamplePosts data={analysis.emotional_playbook as Record<string, unknown>} onGenerate={setVariationModal} />
       </Section>
 
       {/* Winning Format */}
       <Section title="Winning Format">
         <JsonSection data={analysis.winning_format as Record<string, unknown>} />
-        <ExamplePosts data={analysis.winning_format as Record<string, unknown>} />
+        <ExamplePosts data={analysis.winning_format as Record<string, unknown>} onGenerate={setVariationModal} />
       </Section>
 
       {/* Structural DNA */}
       <Section title="Structural DNA">
         <JsonSection data={analysis.structural_dna as Record<string, unknown>} />
-        <ExamplePosts data={analysis.structural_dna as Record<string, unknown>} />
+        <ExamplePosts data={analysis.structural_dna as Record<string, unknown>} onGenerate={setVariationModal} />
       </Section>
 
       {/* Specificity */}
       <Section title="Specificity">
         <JsonSection data={analysis.specificity as Record<string, unknown>} />
-        <ExamplePosts data={analysis.specificity as Record<string, unknown>} />
+        <ExamplePosts data={analysis.specificity as Record<string, unknown>} onGenerate={setVariationModal} />
       </Section>
 
       {/* Close Patterns */}
       <Section title="Close Patterns">
         <JsonSection data={analysis.close_patterns as Record<string, unknown>} />
-        <ExamplePosts data={analysis.close_patterns as Record<string, unknown>} />
+        <ExamplePosts data={analysis.close_patterns as Record<string, unknown>} onGenerate={setVariationModal} />
       </Section>
 
       {/* What Doesn't Work */}
       <Section title="What Doesn't Work">
         <JsonSection data={analysis.what_doesnt_work as Record<string, unknown>} />
-        <ExamplePosts data={analysis.what_doesnt_work as Record<string, unknown>} />
+        <ExamplePosts data={analysis.what_doesnt_work as Record<string, unknown>} onGenerate={setVariationModal} />
       </Section>
+
+      {/* Generate Variation Modal */}
+      {variationModal && (
+        <GeneratePostModal
+          isOpen={true}
+          onClose={() => setVariationModal(null)}
+          title={variationModal}
+          topic={variationModal}
+          angle=""
+          hookDraft={variationModal}
+          format="narrative"
+          emotionalRegister=""
+          winningFormula={winningFormula}
+        />
+      )}
     </div>
   );
 }
@@ -124,20 +144,26 @@ function Section({
   );
 }
 
-function ExamplePosts({ data }: { data: Record<string, unknown> }) {
+function ExamplePosts({ data, onGenerate }: { data: Record<string, unknown>; onGenerate: (text: string) => void }) {
   const examples = data.example_posts;
   if (!Array.isArray(examples) || examples.length === 0) return null;
 
   return (
     <div className="mt-4 pt-4 border-t border-[#1E1E1E]">
-      <h4 className="text-xs font-medium text-[#DA4E24] mb-2">Post Suggestions</h4>
+      <h4 className="text-xs font-medium text-[#DA4E24] mb-2">Examples to Avoid</h4>
       <div className="space-y-2">
         {examples.map((post, i) => (
           <div
             key={i}
-            className="bg-[#DA4E24]/5 border border-[#DA4E24]/20 rounded-lg p-3"
+            className="bg-[#DA4E24]/5 border border-[#DA4E24]/20 rounded-lg p-3 flex items-start justify-between gap-3"
           >
-            <p className="text-sm text-[#F1F1F1] italic">&ldquo;{String(post)}&rdquo;</p>
+            <p className="text-sm text-[#F1F1F1] italic flex-1">&ldquo;{String(post)}&rdquo;</p>
+            <button
+              onClick={() => onGenerate(String(post))}
+              className="flex-shrink-0 text-xs px-2.5 py-1 bg-[#DA4E24] text-white rounded hover:bg-[#DA4E24]/90 transition-colors whitespace-nowrap"
+            >
+              Generate Variation &#8599;
+            </button>
           </div>
         ))}
       </div>

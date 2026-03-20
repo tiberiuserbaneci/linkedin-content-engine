@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [analysis, setAnalysis] = useState<ContentAnalysis | null>(null);
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [topPosts, setTopPosts] = useState<TopPost[]>([]);
+  const [allPosts, setAllPosts] = useState<TopPost[]>([]);
   const [engagementStats, setEngagementStats] = useState<EngagementStats | null>(null);
   const [tab, setTab] = useState<Tab>("ideas");
   const [showModal, setShowModal] = useState(false);
@@ -69,17 +70,20 @@ export default function Dashboard() {
         setAnalysis(data.analysis);
         setIdeas(data.ideas);
         setTopPosts(data.top_posts || []);
+        setAllPosts(data.all_posts || []);
         setEngagementStats(data.engagement_stats || null);
       } else {
         setAnalysis(null);
         setIdeas([]);
         setTopPosts([]);
+        setAllPosts([]);
         setEngagementStats(null);
       }
     } catch {
       setAnalysis(null);
       setIdeas([]);
       setTopPosts([]);
+      setAllPosts([]);
       setEngagementStats(null);
     }
   }, []);
@@ -124,6 +128,7 @@ export default function Dashboard() {
           setAnalysis(null);
           setIdeas([]);
           setTopPosts([]);
+          setAllPosts([]);
           setEngagementStats(null);
         }
       }
@@ -186,9 +191,11 @@ export default function Dashboard() {
                     onStatusChange={handleStatusChange}
                     engagementStats={engagementStats}
                     topPosts={topPosts}
+                    allPosts={allPosts}
+                    winningFormula={analysis?.winning_formula || ""}
                   />
                 ) : (
-                  <WinningProfileTab analysis={analysis} />
+                  <WinningProfileTab analysis={analysis} winningFormula={analysis.winning_formula} />
                 )
               ) : (
                 <div className="flex-1 flex items-center justify-center p-12 text-center">

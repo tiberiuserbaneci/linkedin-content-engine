@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 import { analyzeProfile, generateIdeas } from "@/lib/claude";
 
-export const maxDuration = 120; // Allow up to 2 minutes for Claude API calls
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,13 +21,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Fetch top 30 posts by reactions for analysis (limits Claude API payload)
+    // Fetch top 20 posts by reactions for analysis (limits Claude API payload)
     const { data: posts, error: postsError } = await supabase
       .from("posts")
-      .select("*")
+      .select("content, reactions_count, comments_count")
       .eq("profile_id", profile_id)
       .order("reactions_count", { ascending: false })
-      .limit(30);
+      .limit(20);
 
     if (postsError) {
       throw new Error(`Failed to fetch posts: ${postsError.message}`);

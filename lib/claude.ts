@@ -7,22 +7,26 @@ function getClient() {
   return new Anthropic();
 }
 
+interface LightPost {
+  content: string;
+  reactions_count: number;
+  comments_count: number;
+}
+
 interface TieredPost {
   content: string;
   reactions: number;
   comments: number;
   tier: "TOP_PERFORMER" | "BASELINE" | "LOW_PERFORMER";
-  word_count: number;
-  post_type: string;
 }
 
-function tierPosts(posts: Post[]): TieredPost[] {
+function tierPosts(posts: LightPost[]): TieredPost[] {
   const sorted = [...posts].sort((a, b) => b.reactions_count - a.reactions_count);
   const top30 = Math.ceil(sorted.length * 0.3);
   const bottom30 = Math.floor(sorted.length * 0.3);
 
   return sorted.map((post, i) => ({
-    content: post.content,
+    content: post.content.slice(0, 500),
     reactions: post.reactions_count,
     comments: post.comments_count,
     tier:
@@ -31,8 +35,6 @@ function tierPosts(posts: Post[]): TieredPost[] {
         : i >= sorted.length - bottom30
         ? ("LOW_PERFORMER" as const)
         : ("BASELINE" as const),
-    word_count: post.word_count,
-    post_type: post.post_type,
   }));
 }
 
@@ -122,7 +124,7 @@ POSTS DATA:
 `;
 
 export async function analyzeProfile(
-  posts: Post[]
+  posts: LightPost[]
 ): Promise<Omit<ContentAnalysis, "id" | "profile_id" | "created_at">> {
   const client = getClient();
   const tieredPosts = tierPosts(posts);
@@ -130,7 +132,7 @@ export async function analyzeProfile(
   const postsText = tieredPosts
     .map(
       (p, i) =>
-        `--- POST ${i + 1} [${p.tier}] (${p.reactions} reactions, ${p.comments} comments, ${p.word_count} words, type: ${p.post_type}) ---\n${p.content}`
+        `--- POST ${i + 1} [${p.tier}] (${p.reactions} reactions, ${p.comments} comments) ---\n${p.content}`
     )
     .join("\n\n");
 

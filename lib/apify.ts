@@ -125,6 +125,7 @@ export async function scrapeLinkedInPosts(
 
   const authorName =
     authorObj?.name ||
+    (firstItem as Record<string, unknown>).fullName as string | undefined ||
     (authorObj?.firstName && authorObj?.lastName
       ? `${authorObj.firstName} ${authorObj.lastName}`.trim()
       : null) ||
@@ -141,9 +142,10 @@ export async function scrapeLinkedInPosts(
       (firstItem.authorProfilePicture as string | undefined) ||
       null,
     followers_count:
-      authorObj?.followersCount ||
       authorObj?.followerCount ||
+      authorObj?.followersCount ||
       (firstItem.authorFollowerCount as number | undefined) ||
+      (firstItem as Record<string, unknown>).followerCount as number | undefined ||
       0,
   };
 

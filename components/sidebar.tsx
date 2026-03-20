@@ -62,12 +62,12 @@ export function Sidebar({ profiles, selectedId, onSelect, onAddProfile, onDelete
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-[#1E1E1E] flex items-center justify-center text-[#666] text-sm flex-shrink-0">
-                    {profile.full_name.charAt(0)}
+                    {(profile.full_name || profile.linkedin_handle || "?").charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-[#F1F1F1] truncate">
-                    {profile.full_name}
+                    {profile.full_name || profile.linkedin_handle}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span
@@ -80,6 +80,11 @@ export function Sidebar({ profiles, selectedId, onSelect, onAddProfile, onDelete
                     <span className="text-[11px] text-[#666]">
                       {profile.posts_count} posts
                     </span>
+                    {profile.ideas_count > 0 && (
+                      <span className="text-[11px] text-[#DA4E24]">
+                        {profile.ideas_count} ideas
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>
