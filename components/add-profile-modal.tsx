@@ -49,12 +49,12 @@ export function AddProfileModal({ isOpen, onClose, onComplete }: AddProfileModal
       const scrapeData = await scrapeRes.json();
 
       if (!scrapeRes.ok) {
-        throw new Error(scrapeData.error || "Failed to scrape");
+        throw new Error(JSON.stringify(scrapeData, null, 2));
       }
 
       const profile_id = scrapeData.profile_id;
       if (!profile_id) {
-        throw new Error("Scrape succeeded but no profile_id returned");
+        throw new Error("No profile_id in response: " + JSON.stringify(scrapeData, null, 2));
       }
 
       // Step 2: Analyze
