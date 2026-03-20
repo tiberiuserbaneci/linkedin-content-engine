@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError) {
-      throw new Error(`Failed to save profile: ${profileError.message}`);
+      throw new Error(`Failed to save profile: ${profileError?.message}`);
     }
 
     // Insert posts (skip duplicates)
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       .upsert(postRecords, { onConflict: "linkedin_post_url", ignoreDuplicates: true });
 
     if (postsError) {
-      throw new Error(`Failed to save posts: ${postsError.message}`);
+      throw new Error(`Failed to save posts: ${postsError?.message}`);
     }
 
     return NextResponse.json({
@@ -90,10 +90,11 @@ export async function POST(request: NextRequest) {
       posts_count: posts.length,
       profile,
     });
-  } catch (error) {
-    console.error("Scrape error:", error);
+  } catch (_err) {
+    const err = _err as Error;
+    console.error("Scrape error:", err.message);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Scrape failed" },
+      { error: err.message ?? "Scrape failed" },
       { status: 500 }
     );
   }
