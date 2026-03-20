@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const handleMatch = linkedin_url.match(
       /linkedin\.com\/in\/([^/?]+)/
     );
-    const linkedin_handle = handleMatch ? handleMatch[1] : linkedin_url;
+    const linkedin_handle = handleMatch?.[1] ?? linkedin_url;
 
     // Scrape posts via Apify
     const { posts, author } = await scrapeLinkedInPosts(linkedin_url, max_posts);
