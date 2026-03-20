@@ -56,8 +56,8 @@ export async function scrapeLinkedInPosts(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        profileUrls: [linkedinUrl],
-        maxPosts,
+        urls: [linkedinUrl],
+        limitPerSource: maxPosts,
       }),
     }
   );

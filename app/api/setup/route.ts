@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import postgres from "postgres";
+import pg from "pg";
 
 const migrationSQL = `
 -- Enable UUID generation
@@ -112,10 +112,14 @@ export async function POST() {
   }
 
   try {
-    const sql = postgres(databaseUrl, { ssl: "require" });
+    const client = new pg.Client({
+      connectionString: databaseUrl,
+      ssl: { rejectUnauthorized: false },
+    });
 
-    await sql.unsafe(migrationSQL);
-    await sql.end();
+    await client.connect();
+    await client.query(migrationSQL);
+    await client.end();
 
     return NextResponse.json({
       success: true,
