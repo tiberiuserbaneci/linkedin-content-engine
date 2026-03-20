@@ -101,13 +101,18 @@ create policy "Allow all for service role" on content_analyses for all using (tr
 create policy "Allow all for service role" on content_ideas for all using (true) with check (true);
 `;
 
-export async function POST() {
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST",
+};
+
+async function runMigration() {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
     return NextResponse.json(
       { error: "DATABASE_URL environment variable is not set. Get it from Supabase Dashboard > Settings > Database > Connection string (URI)." },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 
@@ -121,15 +126,26 @@ export async function POST() {
     await client.query(migrationSQL);
     await client.end();
 
-    return NextResponse.json({
-      success: true,
-      message: "Database migration completed. Tables created: profiles, posts, content_analyses, content_ideas",
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Database migration completed. Tables created: profiles, posts, content_analyses, content_ideas",
+      },
+      { headers: corsHeaders }
+    );
   } catch (error) {
     console.error("Migration error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Migration failed" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function GET() {
+  return runMigration();
+}
+
+export async function POST() {
+  return runMigration();
 }
