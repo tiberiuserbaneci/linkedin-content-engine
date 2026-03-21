@@ -91,3 +91,63 @@ create policy "Allow all for service role" on profiles for all using (true) with
 create policy "Allow all for service role" on posts for all using (true) with check (true);
 create policy "Allow all for service role" on content_analyses for all using (true) with check (true);
 create policy "Allow all for service role" on content_ideas for all using (true) with check (true);
+
+-- VC Outreach Pipeline Tables
+
+create table if not exists vc_firms (
+  id uuid primary key default gen_random_uuid(),
+  name text,
+  linkedin_url text unique,
+  linkedin_handle text,
+  description text,
+  focus_areas text[],
+  location text,
+  employee_count integer,
+  website text,
+  follower_count integer,
+  scraped_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create table if not exists vc_contacts (
+  id uuid primary key default gen_random_uuid(),
+  firm_id uuid references vc_firms(id) on delete cascade,
+  linkedin_url text unique,
+  full_name text,
+  title text,
+  avatar_url text,
+  followers_count integer,
+  last_post_date timestamptz,
+  last_post_content text,
+  is_active boolean default false,
+  has_current_position boolean default true,
+  about text,
+  location text,
+  raw_json jsonb,
+  created_at timestamptz default now()
+);
+
+create table if not exists vc_outreach (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid references vc_contacts(id) on delete cascade,
+  status text default 'to_contact' check (status in ('to_contact','contacted','replied','not_interested')),
+  dm_text text,
+  dm_generated_at timestamptz,
+  contacted_at timestamptz,
+  replied_at timestamptz,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create index idx_vc_contacts_firm_id on vc_contacts(firm_id);
+create index idx_vc_contacts_active on vc_contacts(is_active, has_current_position);
+create index idx_vc_outreach_contact on vc_outreach(contact_id);
+
+-- RLS for VC tables
+alter table vc_firms enable row level security;
+alter table vc_contacts enable row level security;
+alter table vc_outreach enable row level security;
+
+create policy "Allow all for service role" on vc_firms for all using (true) with check (true);
+create policy "Allow all for service role" on vc_contacts for all using (true) with check (true);
+create policy "Allow all for service role" on vc_outreach for all using (true) with check (true);

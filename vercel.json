@@ -4,6 +4,13 @@
     "app/api/analyze/ideas/route.ts": { "maxDuration": 60 },
     "app/api/scrape/route.ts": { "maxDuration": 300 },
     "app/api/generate-post/route.ts": { "maxDuration": 60 },
-    "app/api/generate-visual/route.ts": { "maxDuration": 60 }
+    "app/api/generate-visual/route.ts": { "maxDuration": 60 },
+    "app/api/vc/search-firms/route.ts": { "maxDuration": 60 },
+    "app/api/vc/add-firms/route.ts": { "maxDuration": 60 },
+    "app/api/vc/scrape-people/route.ts": { "maxDuration": 60 },
+    "app/api/vc/generate-dm/route.ts": { "maxDuration": 60 },
+    "app/api/vc/outreach/[id]/route.ts": { "maxDuration": 60 },
+    "app/api/vc/contacts/route.ts": { "maxDuration": 60 },
+    "app/api/vc/firms/route.ts": { "maxDuration": 60 }
   }
 }
