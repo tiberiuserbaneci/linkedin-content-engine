@@ -106,32 +106,47 @@ export async function POST(request: NextRequest) {
     }
     steps.push(`profile saved: ${profile.id}`);
 
-    // Step 4: Insert posts (skip duplicates)
-    steps.push("upserting posts to supabase");
-    const postRecords = posts.map((post) => ({
-      profile_id: profile.id,
-      linkedin_post_url: post.url || `${linkedin_url}/post-${Date.now()}-${Math.random()}`,
-      content: post.content,
-      published_at: post.published_at,
-      reactions_count: post.reactions_count,
-      comments_count: post.comments_count,
-      shares_count: post.shares_count,
-      post_type: post.post_type || "text",
-      word_count: post.content.split(/\s+/).length,
-      raw_json: post.raw_json,
-    }));
-
-    const { error: postsError } = await supabase
+    // Step 4: Insert posts — deduplicate against existing URLs
+    steps.push("fetching existing post URLs for deduplication");
+    const { data: existingPosts } = await supabase
       .from("posts")
-      .upsert(postRecords, { onConflict: "linkedin_post_url", ignoreDuplicates: true });
+      .select("linkedin_post_url")
+      .eq("profile_id", profile.id);
 
-    if (postsError) {
-      return NextResponse.json(
-        { error: `Failed to save posts: ${postsError.message}`, steps },
-        { status: 500 }
-      );
+    const existingUrls = new Set(
+      (existingPosts || []).map((p) => p.linkedin_post_url)
+    );
+
+    const postRecords = posts
+      .map((post) => ({
+        profile_id: profile.id,
+        linkedin_post_url: post.url || `${linkedin_url}/post-${Date.now()}-${Math.random()}`,
+        content: post.content,
+        published_at: post.published_at,
+        reactions_count: post.reactions_count,
+        comments_count: post.comments_count,
+        shares_count: post.shares_count,
+        post_type: post.post_type || "text",
+        word_count: post.content.split(/\s+/).length,
+        raw_json: post.raw_json,
+      }))
+      .filter((record) => !existingUrls.has(record.linkedin_post_url));
+
+    steps.push(`${posts.length} scraped, ${postRecords.length} new (${posts.length - postRecords.length} duplicates skipped)`);
+
+    if (postRecords.length > 0) {
+      const { error: postsError } = await supabase
+        .from("posts")
+        .insert(postRecords);
+
+      if (postsError) {
+        return NextResponse.json(
+          { error: `Failed to save posts: ${postsError.message}`, steps },
+          { status: 500 }
+        );
+      }
     }
-    steps.push(`posts upserted: ${posts.length}`);
+    steps.push(`posts saved: ${postRecords.length}`);
 
     return NextResponse.json({
       profile_id: profile.id,

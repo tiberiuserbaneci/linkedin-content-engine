@@ -1,7 +1,8 @@
 const APIFY_TOKEN = process.env.APIFY_TOKEN!;
 const ACTOR_ID = "supreme_coder~linkedin-post";
 const POLL_INTERVAL_MS = 5000;
-const MAX_TIMEOUT_MS = 180000; // 3 minutes
+const MAX_TIMEOUT_MS = 90000; // 90 seconds — abort early to avoid burning credits
+const HARD_POST_CAP = 50; // Never request more than 50 posts
 
 interface ApifyRunResponse {
   data: {
@@ -67,7 +68,10 @@ export async function scrapeLinkedInPosts(
   linkedinUrl: string,
   maxPosts: number = 50
 ): Promise<{ posts: ScrapedPost[]; author: ScrapedAuthor }> {
-  // Start the actor run — input field is "maxPosts" (not limitPerSource)
+  // Hard cap to prevent burning credits
+  const safeLimit = Math.min(maxPosts, HARD_POST_CAP);
+
+  // Start the actor run — input field is "limitPerSource"
   const startRes = await fetch(
     `https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
     {
@@ -75,7 +79,7 @@ export async function scrapeLinkedInPosts(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         urls: [linkedinUrl],
-        maxPosts: maxPosts,
+        limitPerSource: safeLimit,
       }),
     }
   );
@@ -94,7 +98,9 @@ export async function scrapeLinkedInPosts(
 
   while (status !== "SUCCEEDED" && status !== "FAILED" && status !== "ABORTED") {
     if (Date.now() - startTime > MAX_TIMEOUT_MS) {
-      throw new Error("Apify actor run timed out after 3 minutes");
+      // Try to abort the run to stop credit consumption
+      fetch(`https://api.apify.com/v2/actor-runs/${runId}/abort?token=${APIFY_TOKEN}`, { method: "POST" }).catch(() => {});
+      throw new Error("Scraping taking too long, try with fewer posts");
     }
 
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
