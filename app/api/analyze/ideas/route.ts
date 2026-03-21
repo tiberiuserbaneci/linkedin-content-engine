@@ -33,8 +33,16 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to fetch analysis: ${analysisError?.message || "not found"}`);
     }
 
-    // Generate ideas with Claude + web search
-    const ideasData = await generateIdeas(analysis, research_space);
+    // Fetch top 10 posts by reactions for this profile
+    const { data: topPosts } = await supabase
+      .from("posts")
+      .select("content, reactions_count, comments_count")
+      .eq("profile_id", profile_id)
+      .order("reactions_count", { ascending: false })
+      .limit(10);
+
+    // Generate ideas with Claude, including real post examples
+    const ideasData = await generateIdeas(analysis, research_space, topPosts || []);
 
     // Save ideas
     const ideaRecords = ideasData.map((idea) => ({

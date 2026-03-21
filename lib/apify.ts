@@ -15,26 +15,19 @@ interface ApifyDatasetItem {
   text?: string;
   content?: string;
   url?: string;
-  postedAt?: string;
-  reactionsCount?: number;
-  commentsCount?: number;
-  sharesCount?: number;
+  postedAtISO?: string;
+  postedAtTimestamp?: number;
   numLikes?: number;
   numComments?: number;
   numShares?: number;
+  type?: string;
   author?: {
-    name?: string;
     firstName?: string;
     lastName?: string;
-    headline?: string;
-    profilePicture?: string;
-    profilePictureUrl?: string;
-    followersCount?: number;
-    followerCount?: number;
+    occupation?: string;
+    picture?: string;
+    [key: string]: unknown;
   };
-  authorName?: string;
-  authorProfilePicture?: string;
-  authorFollowerCount?: number;
   [key: string]: unknown;
 }
 
@@ -45,6 +38,7 @@ export interface ScrapedPost {
   reactions_count: number;
   comments_count: number;
   shares_count: number;
+  post_type: string;
   raw_json: Record<string, unknown>;
 }
 
@@ -52,19 +46,19 @@ export interface ScrapedAuthor {
   name: string;
   headline: string | null;
   avatar_url: string | null;
-  followers_count: number;
+  followers_count: number | null;
 }
 
-function parseDate(val: unknown): string | null {
-  if (!val) return null;
-  if (typeof val === "number") {
-    // Unix timestamp — could be seconds or milliseconds
-    const ts = val < 1e12 ? val * 1000 : val;
-    return new Date(ts).toISOString();
+function parseDate(isoStr?: string, timestamp?: number): string | null {
+  // Prefer ISO string
+  if (isoStr && typeof isoStr === "string" && isoStr.trim()) {
+    const d = new Date(isoStr);
+    if (!isNaN(d.getTime())) return d.toISOString();
   }
-  if (typeof val === "string" && val.trim()) {
-    const d = new Date(val);
-    return isNaN(d.getTime()) ? null : d.toISOString();
+  // Fall back to Unix timestamp (milliseconds)
+  if (timestamp && typeof timestamp === "number") {
+    const ts = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+    return new Date(ts).toISOString();
   }
   return null;
 }
@@ -73,7 +67,7 @@ export async function scrapeLinkedInPosts(
   linkedinUrl: string,
   maxPosts: number = 50
 ): Promise<{ posts: ScrapedPost[]; author: ScrapedAuthor }> {
-  // Start the actor run
+  // Start the actor run — input field is "maxPosts" (not limitPerSource)
   const startRes = await fetch(
     `https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
     {
@@ -81,7 +75,7 @@ export async function scrapeLinkedInPosts(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         urls: [linkedinUrl],
-        limitPerSource: maxPosts,
+        maxPosts: maxPosts,
       }),
     }
   );
@@ -124,7 +118,7 @@ export async function scrapeLinkedInPosts(
 
   // Filter out non-post items (e.g. type: "document" wrappers)
   const postItems = items.filter((item) => {
-    if ((item as Record<string, unknown>).type === "document") return false;
+    if (item.type === "document") return false;
     const text = item.text || item.content;
     return typeof text === "string" && text.trim().length > 0;
   });
@@ -133,86 +127,40 @@ export async function scrapeLinkedInPosts(
     throw new Error("No posts found for this LinkedIn profile");
   }
 
-  // Extract author from ALL items (including document-type wrappers that may have author data)
-  // Try each item until we find one with author info
-  function extractAuthorFromItem(item: ApifyDatasetItem): { authorObj: ApifyDatasetItem["author"]; raw: Record<string, unknown> } | null {
-    const r = item as Record<string, unknown>;
-    const a = item.author;
-    if (a?.name || a?.firstName || a?.followersCount || a?.followerCount || r.authorName || r.fullName) {
-      return { authorObj: a, raw: r };
-    }
-    return null;
-  }
-
-  // Check ALL items first (unfiltered), then fall back to filtered post items
-  let authorSource: { authorObj: ApifyDatasetItem["author"]; raw: Record<string, unknown> } | null = null;
+  // Extract author from items — check all items for author data
+  let authorData: ApifyDatasetItem["author"] | null = null;
   for (const item of items) {
-    authorSource = extractAuthorFromItem(item);
-    if (authorSource) break;
+    if (item.author?.firstName || item.author?.lastName) {
+      authorData = item.author;
+      break;
+    }
   }
-  if (!authorSource) {
-    authorSource = { authorObj: postItems[0].author, raw: postItems[0] as Record<string, unknown> };
+  if (!authorData && postItems[0]?.author) {
+    authorData = postItems[0].author;
   }
 
-  const { authorObj, raw } = authorSource;
-
-  // Log raw author fields for debugging
-  console.log("APIFY AUTHOR FIELDS:", JSON.stringify({
-    itemCount: items.length,
-    postItemCount: postItems.length,
-    author: authorObj,
-    topLevel: {
-      authorName: raw.authorName,
-      fullName: raw.fullName,
-      followerCount: raw.followerCount,
-      followersCount: raw.followersCount,
-      followers: raw.followers,
-      connectionsCount: raw.connectionsCount,
-    },
-  }));
-
-  const authorName =
-    authorObj?.name ||
-    (raw.fullName as string | undefined) ||
-    (authorObj?.firstName && authorObj?.lastName
-      ? `${authorObj.firstName} ${authorObj.lastName}`.trim()
-      : null) ||
-    (authorObj?.firstName || null) ||
-    (raw.authorName as string | undefined) ||
-    "Unknown";
+  const authorName = authorData
+    ? [authorData.firstName, authorData.lastName].filter(Boolean).join(" ").trim() || "Unknown"
+    : "Unknown";
 
   const author: ScrapedAuthor = {
     name: authorName,
-    headline: authorObj?.headline || null,
-    avatar_url:
-      authorObj?.profilePicture ||
-      authorObj?.profilePictureUrl ||
-      (raw.authorProfilePicture as string | undefined) ||
-      null,
-    followers_count:
-      authorObj?.followerCount ||
-      authorObj?.followersCount ||
-      (authorObj as Record<string, unknown> | undefined)?.followers as number | undefined ||
-      (authorObj as Record<string, unknown> | undefined)?.connectionsCount as number | undefined ||
-      (raw.authorFollowerCount as number | undefined) ||
-      (raw.followerCount as number | undefined) ||
-      (raw.followersCount as number | undefined) ||
-      (raw.followers as number | undefined) ||
-      (raw.connectionsCount as number | undefined) ||
-      0,
+    headline: authorData?.occupation || null,
+    avatar_url: authorData?.picture || null,
+    followers_count: null, // Not available in this Apify actor
   };
 
-  // Extract posts — handle multiple field name variants for engagement
-  const posts: ScrapedPost[] = postItems
-    .map((item) => ({
-      content: (item.text || item.content || "").trim(),
-      url: item.url || "",
-      published_at: parseDate(item.postedAt || (item as Record<string, unknown>).publishedAt || (item as Record<string, unknown>).date),
-      reactions_count: item.reactionsCount ?? item.numLikes ?? 0,
-      comments_count: item.commentsCount ?? item.numComments ?? 0,
-      shares_count: item.sharesCount ?? item.numShares ?? 0,
-      raw_json: item as Record<string, unknown>,
-    }));
+  // Extract posts using correct Apify field names
+  const posts: ScrapedPost[] = postItems.map((item) => ({
+    content: (item.text || item.content || "").trim(),
+    url: item.url || "",
+    published_at: parseDate(item.postedAtISO, item.postedAtTimestamp),
+    reactions_count: item.numLikes ?? 0,
+    comments_count: item.numComments ?? 0,
+    shares_count: item.numShares ?? 0,
+    post_type: (item.type as string) || "text",
+    raw_json: item as Record<string, unknown>,
+  }));
 
   return { posts, author };
 }

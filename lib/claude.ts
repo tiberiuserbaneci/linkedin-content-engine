@@ -176,21 +176,30 @@ export async function analyzeProfile(
   };
 }
 
-const IDEAS_PROMPT_FAST = `Generate 10 LinkedIn content ideas for a creator whose winning formula is:
+interface RealPost {
+  content: string;
+  reactions_count: number;
+  comments_count: number;
+}
+
+const IDEAS_PROMPT_FAST = `Generate 10 LinkedIn content ideas for a creator. Study their winning formula AND their real top-performing posts below carefully. Your ideas must replicate their EXACT tone, voice, hook style, and writing patterns.
 
 WINNING FORMULA:
 `;
 
 const IDEAS_SUFFIX = `
 
-Each idea must have: position (1-10), title, topic, pattern_matches (array of {type, label} where type is one of: topic/format/hook/emotion/specificity), angle, hook_draft (a REAL usable first sentence), format (narrative/how_to/opinion/data_driven), emotional_register, trending_signal.
+Each idea must have: position (1-10), title, topic, pattern_matches (array of {type, label} where type is one of: topic/format/hook/emotion/specificity), angle, hook_draft (a REAL usable first sentence that matches this creator's exact voice and hook style — study the real posts above), format (narrative/how_to/opinion/data_driven), emotional_register, trending_signal.
+
+CRITICAL: The hook_draft must sound like it was written by THIS creator. Copy their sentence structure, tone, and style from the real posts above. Do NOT write generic LinkedIn hooks.
 
 Respond with ONLY valid JSON, no markdown:
 {"ideas":[{...}]}`;
 
 export async function generateIdeas(
   analysis: ContentAnalysis,
-  researchSpace?: string
+  researchSpace?: string,
+  realPosts?: RealPost[]
 ): Promise<Omit<ContentIdea, "id" | "analysis_id" | "profile_id" | "created_at">[]> {
   const client = getClient();
 
@@ -201,10 +210,21 @@ export async function generateIdeas(
 
   const spaceNote = researchSpace ? `\nFocus area: ${researchSpace}` : "";
 
+  // Include real top posts for voice/tone matching (truncate to stay within limits)
+  let realPostsSection = "";
+  if (realPosts && realPosts.length > 0) {
+    const postTexts = realPosts
+      .slice(0, 10)
+      .map((p, i) => `--- TOP POST ${i + 1} (${p.reactions_count} reactions, ${p.comments_count} comments) ---\n${p.content.slice(0, 500)}`)
+      .join("\n\n");
+    realPostsSection = `\n\nREAL TOP-PERFORMING POSTS (study these for voice, tone, hooks):\n${postTexts}`;
+  }
+
   const prompt =
     IDEAS_PROMPT_FAST +
     analysis.winning_formula +
     `\n\nTop topics: ${topicNames}` +
+    realPostsSection +
     spaceNote +
     IDEAS_SUFFIX;
 

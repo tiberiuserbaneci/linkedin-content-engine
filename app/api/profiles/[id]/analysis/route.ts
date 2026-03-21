@@ -39,7 +39,7 @@ export async function GET(
     // Get all posts for this profile (by reactions)
     const { data: allPosts } = await supabase
       .from("posts")
-      .select("id, content, reactions_count, comments_count, shares_count, linkedin_post_url, published_at")
+      .select("id, content, reactions_count, comments_count, shares_count, linkedin_post_url, published_at, post_type")
       .eq("profile_id", id)
       .order("reactions_count", { ascending: false });
 

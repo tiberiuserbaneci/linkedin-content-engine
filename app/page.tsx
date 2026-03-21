@@ -21,6 +21,7 @@ interface TopPost {
   shares_count: number;
   linkedin_post_url: string;
   published_at: string | null;
+  post_type: string;
 }
 
 interface EngagementStats {

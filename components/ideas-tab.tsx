@@ -34,6 +34,7 @@ interface PostItem {
   shares_count: number;
   linkedin_post_url: string;
   published_at: string | null;
+  post_type: string;
 }
 
 interface EngagementStats {
@@ -97,9 +98,14 @@ export function IdeasTab({ ideas, onStatusChange, engagementStats, topPosts, all
                 <div className="flex items-start gap-3">
                   <span className="text-xs font-semibold text-[#DA4E24] mt-0.5">#{i + 1}</span>
                   <div className="flex-1 min-w-0">
-                    {post.published_at && (
-                      <p className="text-xs text-[#666] mb-1">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-                    )}
+                    <div className="flex items-center gap-2 mb-1">
+                      {post.published_at && (
+                        <span className="text-xs text-[#666]">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                      )}
+                      {post.post_type && post.post_type !== "text" && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2563EB]/20 text-[#60A5FA] border border-[#2563EB]/30">{post.post_type}</span>
+                      )}
+                    </div>
                     <p className="text-sm text-[#BBB] line-clamp-2">
                       {post.content.slice(0, 200)}{post.content.length > 200 ? "..." : ""}
                     </p>
@@ -109,6 +115,19 @@ export function IdeasTab({ ideas, onStatusChange, engagementStats, topPosts, all
                       <span>{post.shares_count.toLocaleString()} shares</span>
                     </div>
                   </div>
+                  {post.linkedin_post_url && (
+                    <a
+                      href={post.linkedin_post_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 text-[#666] hover:text-[#F1F1F1] transition-colors mt-1"
+                      title="View on LinkedIn"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
@@ -276,9 +295,14 @@ function AllPostsList({ posts }: { posts: PostItem[] }) {
           {displayPosts.map((post) => (
             <div key={post.id} className="bg-[#0A0A0A] rounded-lg p-3 flex items-start gap-3">
               <div className="flex-1 min-w-0">
-                {post.published_at && (
-                  <p className="text-xs text-[#666] mb-1">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-                )}
+                <div className="flex items-center gap-2 mb-1">
+                  {post.published_at && (
+                    <span className="text-xs text-[#666]">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  )}
+                  {post.post_type && post.post_type !== "text" && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2563EB]/20 text-[#60A5FA] border border-[#2563EB]/30">{post.post_type}</span>
+                  )}
+                </div>
                 <p className="text-sm text-[#BBB]">
                   {post.content.slice(0, 150)}{post.content.length > 150 ? "..." : ""}
                 </p>

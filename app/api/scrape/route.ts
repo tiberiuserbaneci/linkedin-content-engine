@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           full_name: author.name,
           headline: author.headline,
           avatar_url: author.avatar_url,
-          followers_count: author.followers_count,
+          followers_count: author.followers_count ?? 0,
           category,
           scraped_at: new Date().toISOString(),
         })
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
           full_name: author.name,
           headline: author.headline,
           avatar_url: author.avatar_url,
-          followers_count: author.followers_count,
+          followers_count: author.followers_count ?? 0,
           category,
           scraped_at: new Date().toISOString(),
         })
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       reactions_count: post.reactions_count,
       comments_count: post.comments_count,
       shares_count: post.shares_count,
-      post_type: "text" as const,
+      post_type: post.post_type || "text",
       word_count: post.content.split(/\s+/).length,
       raw_json: post.raw_json,
     }));
