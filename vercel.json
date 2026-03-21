@@ -3,6 +3,7 @@
     "app/api/analyze/profile/route.ts": { "maxDuration": 60 },
     "app/api/analyze/ideas/route.ts": { "maxDuration": 60 },
     "app/api/scrape/route.ts": { "maxDuration": 300 },
-    "app/api/generate-post/route.ts": { "maxDuration": 60 }
+    "app/api/generate-post/route.ts": { "maxDuration": 60 },
+    "app/api/generate-visual/route.ts": { "maxDuration": 60 }
   }
 }
