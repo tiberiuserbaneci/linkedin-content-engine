@@ -4,16 +4,22 @@ import { createServerClient } from "@/lib/supabase";
 export const maxDuration = 60;
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN!;
-// Dedicated company search actor — not the profile search actor
 const COMPANY_SEARCH_ACTOR = "apimaestro~linkedin-companies-search-scraper";
+const MAX_UNIQUE_FIRMS = 50;
+
+// Parse numeric values from strings like "556 followers" or "1,200 employees"
+function parseNumber(val: unknown): number | null {
+  if (!val) return null;
+  const num = parseInt(String(val).replace(/[^0-9]/g, ""));
+  return isNaN(num) ? null : num;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
       keywords,
-      max_results = 10,
-    }: { keywords: string[]; max_results?: number } = body;
+    }: { keywords: string[] } = body;
 
     if (!keywords?.length) {
       return NextResponse.json(
@@ -23,14 +29,14 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
-    const allFirms: Record<string, unknown>[] = [];
+    // Deduplicate by linkedin_url as we go
+    const firmsByUrl: Record<string, Record<string, unknown>> = {};
 
-    // Calculate pages needed per keyword (50 results per page)
-    const pagesPerKeyword = Math.max(1, Math.ceil(max_results / 50));
-
+    // Run keywords sequentially — one Apify call at a time
     for (const keyword of keywords) {
-      // Run apimaestro/linkedin-companies-search-scraper
-      // Input: { keyword: string, page_number: number }
+      // Stop if we already have enough
+      if (Object.keys(firmsByUrl).length >= MAX_UNIQUE_FIRMS) break;
+
       const startRes = await fetch(
         `https://api.apify.com/v2/acts/${COMPANY_SEARCH_ACTOR}/runs?token=${APIFY_TOKEN}`,
         {
@@ -38,7 +44,7 @@ export async function POST(request: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             keyword,
-            page_number: pagesPerKeyword,
+            page_number: 1,
           }),
         }
       );
@@ -70,13 +76,16 @@ export async function POST(request: NextRequest) {
       const items = await dataRes.json();
 
       for (const item of items) {
-        // Extract LinkedIn company URL from various possible fields
+        if (Object.keys(firmsByUrl).length >= MAX_UNIQUE_FIRMS) break;
+
         const url = item.linkedinUrl || item.linkedin_url || item.companyUrl || item.url || item.company_url;
         if (!url || typeof url !== "string") continue;
-        // Must be a LinkedIn company URL
         if (!url.includes("linkedin.com/company/")) continue;
 
-        allFirms.push({
+        // Skip if already seen
+        if (firmsByUrl[url]) continue;
+
+        firmsByUrl[url] = {
           name: item.name || item.companyName || item.company_name || item.title || "Unknown",
           linkedin_url: url,
           linkedin_handle: url.match(/company\/([^/?]+)/)?.[1] || url,
@@ -85,27 +94,20 @@ export async function POST(request: NextRequest) {
             ? (Array.isArray(item.industries || item.specialties) ? (item.industries || item.specialties) : [item.industry])
             : [],
           location: item.location || item.headquarters || null,
-          employee_count: item.employeeCount || item.staffCount || item.employee_count || null,
+          employee_count: parseNumber(item.employeeCount || item.staffCount || item.employee_count),
           website: item.website || null,
-          follower_count: item.followerCount || item.follower_count || null,
+          follower_count: parseNumber(item.followerCount || item.follower_count),
           scraped_at: new Date().toISOString(),
-        });
+        };
       }
     }
 
-    // Deduplicate by linkedin_url
-    const uniqueFirms = Object.values(
-      allFirms.reduce<Record<string, Record<string, unknown>>>((acc, firm) => {
-        acc[firm.linkedin_url as string] = firm;
-        return acc;
-      }, {})
-    );
+    const uniqueFirms = Object.values(firmsByUrl);
 
     if (uniqueFirms.length === 0) {
       return NextResponse.json({ firms_found: 0, firms: [] });
     }
 
-    // Upsert to DB
     const { data: firms, error } = await supabase
       .from("vc_firms")
       .upsert(uniqueFirms, { onConflict: "linkedin_url", ignoreDuplicates: false })
