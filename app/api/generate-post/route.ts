@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
       format,
       emotional_register,
       winning_formula,
-      generate_visual_prompt,
     }: {
       title: string;
       topic: string;
@@ -23,7 +22,6 @@ export async function POST(request: NextRequest) {
       format: string;
       emotional_register: string;
       winning_formula: string;
-      generate_visual_prompt?: boolean;
     } = body;
 
     if (!title || !winning_formula) {
@@ -36,7 +34,7 @@ export async function POST(request: NextRequest) {
     const client = new Anthropic();
     const seed = Math.floor(Math.random() * 1000000);
 
-    let prompt = `You are an expert LinkedIn ghostwriter. Generate a complete, ready-to-publish LinkedIn post.
+    const prompt = `You are an expert LinkedIn ghostwriter. Generate a complete, ready-to-publish LinkedIn post.
 
 WINNING FORMULA FOR THIS CREATOR:
 ${winning_formula}
@@ -57,17 +55,8 @@ RULES:
 4. Include line breaks for readability
 5. End with a strong CTA or question
 6. Do NOT use hashtags
-7. Output ONLY the post text, no explanations or meta-commentary`;
-
-    if (generate_visual_prompt) {
-      prompt += `
-
-ALSO: After the post, on a new line, write "---VISUAL_PROMPT---" followed by an optimized image generation prompt (for Ideogram/DALL-E) that would create a compelling visual to accompany this post. The visual prompt should:
-- Be 1-3 sentences
-- Describe a clean, professional visual
-- Include style keywords (e.g. "minimal illustration", "flat design", "photo-realistic")
-- Match the post's theme and emotional tone`;
-    }
+7. If the post lists specific tools, numbers, or data points — include ALL of them, never summarize or reduce
+8. Output ONLY the post text, no explanations or meta-commentary`;
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -80,16 +69,9 @@ ALSO: After the post, on a new line, write "---VISUAL_PROMPT---" followed by an 
       .map((block) => (block.type === "text" ? block.text : ""))
       .join("");
 
-    let post = text.trim();
-    let visual_prompt: string | null = null;
+    const post = text.trim();
 
-    if (generate_visual_prompt && text.includes("---VISUAL_PROMPT---")) {
-      const parts = text.split("---VISUAL_PROMPT---");
-      post = parts[0].trim();
-      visual_prompt = parts[1].trim();
-    }
-
-    return NextResponse.json({ post, visual_prompt });
+    return NextResponse.json({ post });
   } catch (error) {
     console.error("Generate post error:", error);
     return NextResponse.json(
