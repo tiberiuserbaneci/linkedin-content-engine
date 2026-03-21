@@ -156,6 +156,13 @@ export async function scrapeLinkedInPosts(
     followers_count: null, // Not available in this Apify actor
   };
 
+  // Normalize Apify type values to match DB check constraint
+  const normalizeType = (type: string): string => {
+    if (type === "linkedinVideo") return "video";
+    if (["text", "image", "video", "article", "poll", "document"].includes(type)) return type;
+    return "other";
+  };
+
   // Extract posts using correct Apify field names
   const posts: ScrapedPost[] = postItems.map((item) => ({
     content: (item.text || item.content || "").trim(),
@@ -164,7 +171,7 @@ export async function scrapeLinkedInPosts(
     reactions_count: item.numLikes ?? 0,
     comments_count: item.numComments ?? 0,
     shares_count: item.numShares ?? 0,
-    post_type: (item.type as string) || "text",
+    post_type: normalizeType((item.type as string) || "text"),
     raw_json: item as Record<string, unknown>,
   }));
 
