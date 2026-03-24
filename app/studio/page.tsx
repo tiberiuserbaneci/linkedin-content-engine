@@ -149,7 +149,7 @@ export default function StudioPage() {
     setShowHtmlEditor(false);
   };
 
-  // Export PNG — waits for fonts before capturing
+  // Export PNG — system fonts render synchronously, just need reflow wait
   const handleExportPNG = async () => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -164,10 +164,8 @@ export default function StudioPage() {
       const fullH = body.scrollHeight;
       iframe.style.height = fullH + "px";
 
-      // Wait for reflow + fonts
-      await new Promise((r) => setTimeout(r, 500));
-      if (iframeDoc.fonts) await iframeDoc.fonts.ready;
-      await new Promise((r) => setTimeout(r, 1500));
+      // Wait for reflow and Logo.dev images to load
+      await new Promise((r) => setTimeout(r, 1000));
 
       const canvas = await html2canvas(body, {
         scale: 2,
