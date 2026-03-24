@@ -66,6 +66,28 @@ export default function StudioPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Resize iframe to full content height (called after HTML loads, with delays for fonts/images)
+  const resizeIframe = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || (iframe.contentWindow as Window & { document: Document } | null)?.document;
+    if (!doc || !doc.body) return;
+    const h = doc.body.scrollHeight;
+    if (h > 0) {
+      iframe.style.height = h + "px";
+    }
+  }, []);
+
+  // Auto-resize when htmlContent changes
+  useEffect(() => {
+    if (!htmlContent) return;
+    // immediate, then after fonts/images settle
+    const t1 = setTimeout(resizeIframe, 100);
+    const t2 = setTimeout(resizeIframe, 600);
+    const t3 = setTimeout(resizeIframe, 1800);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [htmlContent, resizeIframe]);
+
   // Load gallery
   useEffect(() => {
     fetch("/api/assets")
@@ -127,15 +149,26 @@ export default function StudioPage() {
     setShowHtmlEditor(false);
   };
 
-  // Export PNG
+  // Export PNG — waits for fonts before capturing
   const handleExportPNG = async () => {
-    if (!iframeRef.current) return;
+    const iframe = iframeRef.current;
+    if (!iframe) return;
     setExporting(true);
     try {
       const { default: html2canvas } = await import("html2canvas-pro");
-      const iframeDoc = iframeRef.current.contentDocument;
+      const iframeDoc = iframe.contentDocument;
       if (!iframeDoc) throw new Error("Cannot access iframe content");
       const body = iframeDoc.body;
+
+      // Expand iframe to full content height
+      const fullH = body.scrollHeight;
+      iframe.style.height = fullH + "px";
+
+      // Wait for reflow + fonts
+      await new Promise((r) => setTimeout(r, 500));
+      if (iframeDoc.fonts) await iframeDoc.fonts.ready;
+      await new Promise((r) => setTimeout(r, 1500));
+
       const canvas = await html2canvas(body, {
         scale: 2,
         useCORS: true,
@@ -143,9 +176,11 @@ export default function StudioPage() {
         height: body.scrollHeight,
         windowHeight: body.scrollHeight,
         width: body.scrollWidth,
+        scrollX: 0,
         scrollY: 0,
         backgroundColor: null,
-        onclone: (clonedDoc: Document) => {
+        onclone: async (clonedDoc: Document) => {
+          if (clonedDoc.fonts) await clonedDoc.fonts.ready;
           clonedDoc.body.style.transform = "none";
           clonedDoc.body.style.margin = "0";
         },
@@ -468,6 +503,7 @@ export default function StudioPage() {
                 style={s.iframe}
                 sandbox="allow-scripts allow-same-origin"
                 title="Visual Preview"
+                onLoad={resizeIframe}
               />
             </div>
 
@@ -744,14 +780,18 @@ const styles: Record<string, React.CSSProperties> = {
   previewContainer: {
     border: "1px solid #2A2A2A",
     borderRadius: 12,
-    overflow: "hidden",
+    overflowY: "auto",
+    overflowX: "hidden",
+    maxHeight: "90vh",
     backgroundColor: "#000",
+    width: "100%",
   },
   iframe: {
     width: "100%",
-    minHeight: 600,
+    height: "600px",
     border: "none",
     display: "block",
+    overflow: "hidden",
   },
   card: {
     backgroundColor: "#111",
