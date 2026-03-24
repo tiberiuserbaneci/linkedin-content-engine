@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TopNav } from "@/components/top-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col antialiased">
+        <TopNav />
         {children}
       </body>
     </html>

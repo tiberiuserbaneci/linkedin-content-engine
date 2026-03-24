@@ -89,7 +89,7 @@ export default function Dashboard() {
   const selectedProfile = profiles.find((p) => p.id === selectedId) || null;
 
   return (
-    <div className="flex h-screen bg-[#0A0A0A]">
+    <div className="flex flex-1 h-[calc(100vh-2.75rem)] bg-[#0A0A0A]">
       <Sidebar
         profiles={profiles}
         selectedId={selectedId}
