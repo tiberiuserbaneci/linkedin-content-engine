@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ["jspdf", "fflate"],
 };
 
 export default nextConfig;
