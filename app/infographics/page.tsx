@@ -31,7 +31,7 @@ async function exportToPng(element: HTMLElement, filename: string) {
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
-    backgroundColor: "#F8F6F1",
+    backgroundColor: "#FAF8F5",
     width: 1080,
     height: 1350,
     windowWidth: 1080,
@@ -116,7 +116,7 @@ function PreviewModal({
             disabled={exporting}
             className="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#C94A22] text-white hover:bg-[#C94A22]/90 transition-colors disabled:opacity-50"
           >
-            {exporting ? "Exporting…" : "Export PNG"}
+            {exporting ? "Exporting…" : "Export PNG (1080×1350)"}
           </button>
           <button
             onClick={onClose}
@@ -128,11 +128,11 @@ function PreviewModal({
       </div>
 
       {/* Scrollable preview area */}
-      <div className="flex-1 overflow-y-auto p-6 flex justify-center">
+      <div className="flex-1 overflow-auto p-6 flex justify-center items-start">
         <div
           ref={contentRef}
-          className="shadow-2xl"
-          style={{ width: 1080, minHeight: 1350 }}
+          className="shadow-2xl shrink-0"
+          style={{ width: 1080, height: 1350 }}
         >
           <template.Component />
         </div>
@@ -167,18 +167,18 @@ function TemplateCard({
 
   return (
     <div className="group rounded-xl border border-[#1E1E1E] bg-[#111] overflow-hidden hover:border-[#333] transition-colors">
-      {/* Thumbnail preview – scaled-down live render */}
+      {/* Thumbnail preview – scaled-down live render of full 1080×1350 */}
       <div
         className="relative overflow-hidden cursor-pointer"
-        style={{ height: 340 }}
+        style={{ height: 375 }}
         onClick={onPreview}
       >
         <div
           className="origin-top-left pointer-events-none"
           style={{
-            transform: "scale(0.28)",
-            width: "1080px",
-            height: "1350px",
+            transform: "scale(0.278)",
+            width: 1080,
+            height: 1350,
             transformOrigin: "top left",
           }}
         >
@@ -258,7 +258,7 @@ export default function InfographicsPage() {
           ))}
 
           {/* Placeholder for future templates */}
-          <div className="rounded-xl border border-dashed border-[#333] bg-[#0A0A0A] flex items-center justify-center min-h-[340px]">
+          <div className="rounded-xl border border-dashed border-[#333] bg-[#0A0A0A] flex items-center justify-center min-h-[375px]">
             <div className="text-center p-4">
               <div className="text-2xl text-[#333] mb-2">+</div>
               <p className="text-[12px] text-[#444]">More templates coming soon</p>
