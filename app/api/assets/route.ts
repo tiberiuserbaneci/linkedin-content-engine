@@ -18,10 +18,14 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const { format, theme, title, html_content } = body;
+    if (!format || !theme || !title || !html_content) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
     const supabase = createServerClient();
     const { data, error } = await supabase
       .from("content_assets")
-      .insert(body)
+      .insert({ format, theme, title, html_content })
       .select()
       .single();
     if (error) throw error;

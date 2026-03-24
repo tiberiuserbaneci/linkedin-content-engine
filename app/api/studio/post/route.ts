@@ -33,40 +33,16 @@ Be bold, back it up with specifics, and offer the alternative.`,
 
 function getLeadMagnetUrl(contentText: string): string {
   const lower = contentText.toLowerCase();
-  if (
-    lower.includes("automat") ||
-    lower.includes("agent") ||
-    lower.includes("workflow") ||
-    lower.includes("n8n") ||
-    lower.includes("zapier")
-  ) {
+  if (lower.includes("automat") || lower.includes("agent") || lower.includes("workflow") || lower.includes("n8n") || lower.includes("zapier")) {
     return "51ultron.com/blueprint/";
   }
-  if (
-    lower.includes("cost") ||
-    lower.includes("roi") ||
-    lower.includes("saving") ||
-    lower.includes("budget") ||
-    lower.includes("revenue") ||
-    lower.includes("pricing")
-  ) {
+  if (lower.includes("cost") || lower.includes("roi") || lower.includes("saving") || lower.includes("budget") || lower.includes("revenue") || lower.includes("pricing")) {
     return "51ultron.com/calculator/";
   }
-  if (
-    lower.includes("competitor") ||
-    lower.includes("intel") ||
-    lower.includes("rival") ||
-    lower.includes("vs") ||
-    lower.includes("compare")
-  ) {
+  if (lower.includes("competitor") || lower.includes("intel") || lower.includes("rival") || lower.includes("vs") || lower.includes("compare")) {
     return "51ultron.com/competitor/";
   }
-  if (
-    lower.includes("tool") ||
-    lower.includes("stack") ||
-    lower.includes("software") ||
-    lower.includes("app")
-  ) {
+  if (lower.includes("tool") || lower.includes("stack") || lower.includes("software") || lower.includes("app")) {
     return "51ultron.com/stack/";
   }
   return "51ultron.com";
@@ -74,17 +50,12 @@ function getLeadMagnetUrl(contentText: string): string {
 
 function getCtaVerb(contentText: string): string {
   const lower = contentText.toLowerCase();
-  if (lower.includes("automat") || lower.includes("workflow"))
-    return "automates this";
+  if (lower.includes("automat") || lower.includes("workflow")) return "automates this";
   if (lower.includes("agent")) return "deploys AI agents for this";
-  if (lower.includes("content") || lower.includes("post"))
-    return "generates content like this";
-  if (lower.includes("sales") || lower.includes("outreach"))
-    return "handles outbound for this";
-  if (lower.includes("data") || lower.includes("analyt"))
-    return "tracks all of this";
-  if (lower.includes("competitor") || lower.includes("intel"))
-    return "monitors competitors for this";
+  if (lower.includes("content") || lower.includes("post")) return "generates content like this";
+  if (lower.includes("sales") || lower.includes("outreach")) return "handles outbound for this";
+  if (lower.includes("data") || lower.includes("analyt")) return "tracks all of this";
+  if (lower.includes("competitor") || lower.includes("intel")) return "monitors competitors for this";
   return "does this at scale";
 }
 
@@ -92,53 +63,48 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      contentJson,
+      htmlContent,
+      rawContent,
       format,
       voice,
       ctaMode,
     }: {
-      contentJson: Record<string, unknown>;
+      htmlContent?: string;
+      rawContent?: string;
       format: string;
       voice: VoiceMode;
       ctaMode: CtaMode;
     } = body;
 
-    if (!contentJson || !format) {
-      return NextResponse.json(
-        { error: "Missing content or format" },
-        { status: 400 }
-      );
+    const contentSource = rawContent || htmlContent || "";
+    if (!contentSource || !format) {
+      return NextResponse.json({ error: "Missing content or format" }, { status: 400 });
     }
 
     const client = getClient();
+    const voiceInstruction = VOICE_INSTRUCTIONS[voice] || VOICE_INSTRUCTIONS.framework;
 
-    const voiceInstruction =
-      VOICE_INSTRUCTIONS[voice] || VOICE_INSTRUCTIONS.framework;
-
-    // Serialize the visual content for the prompt
-    const contentStr = JSON.stringify(contentJson, null, 2);
-    const contentTextFlat = JSON.stringify(contentJson);
-
-    const ctaUrl = getLeadMagnetUrl(contentTextFlat);
-    const ctaVerb = getCtaVerb(contentTextFlat);
+    const ctaUrl = getLeadMagnetUrl(contentSource);
+    const ctaVerb = getCtaVerb(contentSource);
 
     let ctaInstruction = "";
     if (ctaMode === "in_post") {
       ctaInstruction = `Include a CTA at the end of the post: "Ultron ${ctaVerb} -> See how at ${ctaUrl}"`;
     } else if (ctaMode === "first_comment") {
-      ctaInstruction =
-        "Do NOT include any CTA in the post itself. End with an easy question or save prompt instead.";
+      ctaInstruction = "Do NOT include any CTA in the post itself. End with an easy question or save prompt instead.";
     } else {
-      ctaInstruction =
-        "Do NOT include any CTA. End with an educational takeaway, easy question, or save prompt.";
+      ctaInstruction = "Do NOT include any CTA. End with an educational takeaway, easy question, or save prompt.";
     }
 
     const prompt = `${BREW360_SKILL}
 
-You are writing a LinkedIn post to accompany a visual (${format.replace("-", " ")}) that contains this content:
+You are writing a LinkedIn post to accompany a visual (${format}) that was created from this content:
 
-VISUAL CONTENT:
-${contentStr}
+ORIGINAL CONTENT:
+${rawContent || "(Visual content was generated from HTML - analyze the themes and topics below)"}
+
+${htmlContent ? `VISUAL HTML (extract topics and key points from this):
+${htmlContent.substring(0, 3000)}` : ""}
 
 VOICE MODE:
 ${voiceInstruction}
@@ -146,7 +112,7 @@ ${voiceInstruction}
 CTA INSTRUCTIONS:
 ${ctaInstruction}
 
-RULES — follow ALL of these precisely:
+RULES - follow ALL of these precisely:
 1. Hook: first 2 lines MUST stop the scroll. Use a contrarian statement, surprising data point, or specific situation
 2. Length: 1,242-2,500 characters total
 3. Structure: 14+ short paragraphs, each 10-19 words
@@ -154,8 +120,8 @@ RULES — follow ALL of these precisely:
 5. NO external links in the post body
 6. NO AI slop: never use "delve", "moreover", "it's worth noting", "landscape", "game-changer", em dashes, or curly quotes
 7. Use straight quotes only
-8. Write like a human — conversational, punchy, specific
-9. Add the visual content's insights but don't just repeat them — add context, stories, or contrarian angles
+8. Write like a human - conversational, punchy, specific
+9. Add the visual content's insights but don't just repeat them - add context, stories, or contrarian angles
 10. End with ONE of: easy question, save prompt ("Save this for later"), or repost prompt
 
 Respond with ONLY the post text. No markdown, no explanation.`;
@@ -172,7 +138,6 @@ Respond with ONLY the post text. No markdown, no explanation.`;
       .join("")
       .trim();
 
-    // Generate first comment if needed
     let firstComment: string | null = null;
     if (ctaMode === "first_comment") {
       firstComment = `Ultron ${ctaVerb} -> See how at ${ctaUrl}`;
@@ -181,8 +146,7 @@ Respond with ONLY the post text. No markdown, no explanation.`;
     return NextResponse.json({ post: postText, firstComment });
   } catch (error) {
     console.error("Post generate error:", error);
-    const message =
-      error instanceof Error ? error.message : "Generation failed";
+    const message = error instanceof Error ? error.message : "Generation failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

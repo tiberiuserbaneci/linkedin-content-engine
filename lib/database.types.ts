@@ -81,7 +81,7 @@ export interface PatternMatch {
   label: string;
 }
 
-export type AssetFormat = "infographic" | "cheatsheet" | "carousel" | "post-cover";
+export type AssetFormat = "infographic" | "cheatsheet" | "carousel" | "poster";
 export type AssetTheme = "light" | "dark" | "expressive";
 
 export interface ContentAsset {
@@ -89,7 +89,7 @@ export interface ContentAsset {
   format: AssetFormat;
   theme: AssetTheme;
   title: string;
-  content_json: Record<string, unknown>;
+  html_content: string;
   created_at: string;
 }
 

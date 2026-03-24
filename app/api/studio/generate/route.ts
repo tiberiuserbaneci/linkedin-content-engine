@@ -8,205 +8,215 @@ function getClient() {
   return new Anthropic();
 }
 
-const FORMAT_SCHEMAS: Record<string, string> = {
-  infographic: `{
-  "eyebrow": "short category label (2-4 words)",
-  "title": "bold, compelling headline (5-10 words)",
-  "subtitle": "supporting context line",
-  "metrics": [
-    { "value": "number or short stat", "label": "what it measures" },
-    { "value": "number or short stat", "label": "what it measures" },
-    { "value": "number or short stat", "label": "what it measures" }
-  ],
-  "sections": [
-    {
-      "title": "section heading",
-      "bullets": ["actionable point 1", "actionable point 2", "actionable point 3", "actionable point 4"]
-    }
-  ]
-}
-Requirements:
-- 3 metrics with punchy short values (use %, x, K+, etc.)
-- 3-6 sections, each with exactly 4 bullets
-- Bullets should be concise (under 8 words each)
-- Title should stop the scroll — bold claim or surprising stat`,
-
-  cheatsheet: `{
-  "eyebrow": "short category label",
-  "title": "reference-style headline",
-  "subtitle": "what this cheatsheet covers",
-  "sections": [
-    {
-      "title": "category name",
-      "items": ["tip or fact 1", "tip or fact 2", "tip or fact 3", "tip or fact 4"]
-    }
-  ],
-  "comparison": {
-    "headers": ["Feature", "Option A", "Option B"],
-    "rows": [
-      { "label": "row label", "values": ["value1", "value2"] }
-    ]
-  },
-  "verdict": "one-line summary or recommendation"
-}
-Requirements:
-- 3-4 sections with 3-5 items each
-- comparison table is optional — include it when the content naturally involves comparing things
-- verdict is optional — include when there's a clear takeaway
-- Items should be scannable and reference-ready`,
-
-  carousel: `{
-  "title": "carousel cover title (compelling, 6-12 words)",
-  "slides": [
-    {
-      "title": "slide heading (short, punchy)",
-      "bullets": ["key point 1", "key point 2", "key point 3"]
-    }
-  ],
-  "cta": {
-    "headline": "action-oriented close (3-5 words)",
-    "subtext": "motivating sentence that drives engagement"
-  }
-}
-Requirements:
-- 4-6 content slides (not counting title and CTA)
-- Each slide: 1 clear title + 3-5 bullets
-- Bullets should be standalone insights, not just sub-points
-- CTA should drive saves, shares, or follows
-- Think "one idea per slide" — each slide should be screenshot-worthy on its own`,
-
-  "post-cover": `{
-  "eyebrow": "topic tag or category (2-3 words)",
-  "title": "bold statement or hot take (4-8 words)",
-  "subtitle": "elaboration that adds context (1-2 sentences)"
-}
-Requirements:
-- Title must be a scroll-stopper — provocative, contrarian, or surprising
-- Subtitle should make someone want to read the full post
-- Eyebrow categorizes the content (e.g., "Leadership", "Hot Take", "Founder Advice")`,
+const FORMAT_DIMENSIONS: Record<string, string> = {
+  infographic: "1080px wide x 1350px tall (portrait, maximizes mobile screen)",
+  cheatsheet: "900px wide, height auto (full content, no cropping)",
+  carousel: "1080px x 1080px per slide (square, standard LinkedIn carousel)",
+  poster: "1080px x 1080px (square, maximum visual impact)",
 };
+
+const SKILL_DESIGN_ARCHITECT = `YOU ARE A WORLD-CLASS DESIGN ARCHITECT.
+
+You do not fill templates. You analyze information and design the optimal visual experience for that specific content.
+
+ANALYSIS BEFORE DESIGN (mandatory):
+1. What type is this information? (list / process / comparison / framework / data / story / hierarchy)
+2. How much information? (3 items vs 10 items = different layout)
+3. What is the dominant visual idea? (one thing must dominate)
+4. What action do I want from the viewer? (save / share / comment)
+
+LAYOUT SELECTION (automatic, based on content type):
+List -> HERO_GRID or ICON_GRID
+Process -> TIMELINE or FLOWCHART
+Comparison -> COMPARISON_TABLE with winner
+Hierarchy -> PYRAMID
+Data -> DASHBOARD with callout metrics
+Framework -> ACROSTIC or MODULAR_CARDS
+Complex -> MOSAIC or MAGAZINE
+
+DESIGN PRINCIPLES (non-negotiable):
+- Every layout is different - no two materials look the same
+- Typography as design: titles at 72-120px minimum
+- Maximum contrast: dark section next to light section
+- One dominant visual element per section
+- Skimmable in 3 seconds, saveable for 30 minutes
+- No lorem ipsum, no placeholder images
+- Iconify icons on every bullet point (tabler set preferred)
+- Company logos via Logo.dev when tool names appear
+
+VISUAL HIERARCHY:
+LEVEL 1 - HOOK VISUAL (0.3 seconds): Title dominant. Font 72-120px. Contrast maxim.
+LEVEL 2 - ORIENTING ELEMENTS (1-3 seconds): Main sections, big metrics, overall structure.
+LEVEL 3 - DETAIL LAYER (30+ seconds): Actual content, bullet points, explanations.
+
+CONTRAST AS DESIGN INSTRUMENT:
+Dark section next to light section = contrast that guides the eye
+Big number (80px) next to small text (13px) = clear hierarchy
+Colored card next to neutral card = visual rhythm that prevents fatigue`;
+
+const SKILL_COPY = `BANNED WORDS (immediate disqualification):
+delve, testament, moreover, tapestry, synergy, paradigm, game-changer, landscape, it's worth noting, in conclusion, to summarize, excited to share, let's dive in
+
+BANNED PUNCTUATION: em dash, en dash, curly quotes, ellipsis character
+
+VOICE: First person, active, specific. Short sentences. Every sentence earns its place.
+Numbers always specific: "8 hours" not "several hours".`;
+
+const SKILL_ICP = `TARGET AUDIENCE:
+Solo founders and 1-10 person team founders. Building in SaaS, services, agencies, consulting.
+Adopting AI to replace or delay headcount. LinkedIn-active, technically curious.
+WHAT MAKES THEM SAVE: Specific frameworks, exact tool names, real numbers, honest analysis.
+WHAT MAKES THEM SCROLL PAST: Generic AI enthusiasm, content that could apply to anyone, lists without context.`;
+
+function getThemeCSS(theme: string): string {
+  if (theme === "light") {
+    return `--bg: #F8F6F1; --accent: #C94A22; --text: #111111; --text-secondary: #666666; --border: #E0DDD6; --card-bg: #FFFFFF; --card-dark: #111111;`;
+  }
+  if (theme === "dark") {
+    return `--bg: #0A0A0A; --accent: #DA4E24; --text: #FFFFFF; --text-secondary: #AAAAAA; --card-bg: #1A1A1A; --card-border: #2A2A2A; --highlight: #DA4E24;`;
+  }
+  // expressive
+  return `--bg: #FFFFFF; --accent: #DA4E24; --text: #111111; --text-secondary: #666666;
+  --section-a: #FFE5D9; --section-b: #D4F1F4; --section-c: #FFF3CD; --section-d: #D5F5E3; --section-e: #E8DAEF; --section-dark: #1A1A1A;`;
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
+      rawContent,
       format,
-      referenceText,
+      theme,
+      direction,
       referenceImages,
-      instructions,
     }: {
+      rawContent: string;
       format: string;
-      referenceText?: string;
+      theme: string;
+      direction?: string;
       referenceImages?: { base64: string; mediaType: string }[];
-      instructions?: string;
     } = body;
 
-    if (!format || !FORMAT_SCHEMAS[format]) {
+    if (!rawContent || !format || !theme) {
       return NextResponse.json(
-        { error: "Invalid format" },
+        { error: "Missing required fields: rawContent, format, theme" },
         { status: 400 }
       );
     }
 
-    if (!referenceText && (!referenceImages || referenceImages.length === 0)) {
+    if (!FORMAT_DIMENSIONS[format]) {
       return NextResponse.json(
-        { error: "Provide at least one reference (text or image)" },
+        { error: `Invalid format. Use: ${Object.keys(FORMAT_DIMENSIONS).join(", ")}` },
         { status: 400 }
       );
     }
 
     const client = getClient();
-
-    // Build content blocks for the message
     const contentBlocks: Anthropic.Messages.ContentBlockParam[] = [];
 
-    // Add reference images first (Claude vision)
+    // Add reference images if provided
     if (referenceImages && referenceImages.length > 0) {
       for (const img of referenceImages) {
         contentBlocks.push({
           type: "image",
           source: {
             type: "base64",
-            media_type: img.mediaType as
-              | "image/jpeg"
-              | "image/png"
-              | "image/gif"
-              | "image/webp",
+            media_type: img.mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
             data: img.base64,
           },
         });
       }
     }
 
-    // Build the text prompt with 360Brew skill injected
-    let prompt = `${BREW360_SKILL}
+    const themeCSS = getThemeCSS(theme);
+    const dimensions = FORMAT_DIMENSIONS[format];
 
-You are a LinkedIn content designer who creates high-performing visual content optimized for the 360Brew algorithm. You've been given reference material (text and/or images) to use as inspiration and source material.
+    const systemPrompt = `You are a Design Architect and front-end engineer. You produce self-contained HTML+CSS documents that are visually stunning, algorithm-optimized LinkedIn content assets.
 
-YOUR TASK: Analyze the references and generate structured content for a LinkedIn ${format.replace("-", " ")}.
+${BREW360_SKILL}
 
-`;
+${SKILL_DESIGN_ARCHITECT}
 
-    if (referenceText) {
-      prompt += `REFERENCE TEXT:
+${SKILL_COPY}
+
+${SKILL_ICP}
+
+Technical requirements:
+- Self-contained HTML. Inline CSS only (in a <style> tag). No external stylesheets except Google Fonts.
+- Google Fonts via @import in style tag (use Bebas Neue for display, DM Sans for body, DM Mono for technical labels)
+- Iconify via CDN: <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+- Company logos via Logo.dev: <img src="https://img.logo.dev/{domain}?token=pk_X0wdB1MQRmWLGQMiPwH2Wg" height="24">
+- Exact dimensions: ${dimensions}
+- Full height rendering - no cropping
+- Theme CSS variables: ${themeCSS}
+- For EXPRESSIVE theme: each section gets a different background color, never two adjacent sections with same color, always include one dark section for contrast
+- For carousels: generate multiple slides as separate <div class="slide"> elements inside a wrapper, each exactly 1080x1080px
+
+ICON MAPPING (use these Iconify icons):
+research: tabler:search, email: tabler:mail, revenue: tabler:trending-up, agents: tabler:robot,
+content: tabler:writing, monitor: tabler:activity, sales: tabler:currency-dollar, code: tabler:code,
+data: tabler:database, users: tabler:users, time: tabler:clock, check: tabler:circle-check,
+warning: tabler:alert-triangle, growth: tabler:chart-line, brain: tabler:brain, rocket: tabler:rocket,
+fire: tabler:flame, lock: tabler:lock, globe: tabler:world, lightning: tabler:bolt,
+target: tabler:target, layers: tabler:stack, settings: tabler:settings, star: tabler:star,
+shield: tabler:shield, dollar: tabler:coin, chart: tabler:chart-bar, calendar: tabler:calendar,
+api: tabler:api, flow: tabler:hierarchy, compare: tabler:columns, tool: tabler:tool
+
+OUTPUT: Complete self-contained HTML starting with <!DOCTYPE html>. No explanations. No markdown wrapper. Raw HTML only.`;
+
+    let userPrompt = `RAW CONTENT:
 """
-${referenceText}
+${rawContent}
 """
 
-`;
-    }
+FORMAT: ${format} (${dimensions})
+THEME: ${theme.toUpperCase()}`;
 
     if (referenceImages && referenceImages.length > 0) {
-      prompt += `REFERENCE IMAGES: I've attached ${referenceImages.length} image(s) above. Extract key ideas, data points, structure, and visual patterns from them.
-
-`;
+      userPrompt += `\n\nREFERENCE IMAGES: I've attached ${referenceImages.length} image(s). Extract key ideas, data points, structure, and visual patterns from them.`;
     }
 
-    if (instructions) {
-      prompt += `ADDITIONAL INSTRUCTIONS FROM THE USER:
-${instructions}
-
-`;
+    if (direction) {
+      userPrompt += `\n\nADDITIONAL DIRECTION FROM USER:\n${direction}`;
     }
 
-    prompt += `OUTPUT FORMAT — respond with ONLY valid JSON matching this exact structure:
-${FORMAT_SCHEMAS[format]}
+    userPrompt += `\n\nAnalyze this content. Determine the optimal layout. Generate the complete HTML document. Output ONLY the raw HTML.`;
 
-IMPORTANT RULES:
-1. Extract real insights and data from the references — don't make up statistics
-2. Rewrite and restructure the content for LinkedIn visual format — don't copy verbatim
-3. Make it more compelling than the source: stronger hooks, punchier language, clearer structure
-4. If the reference is about a specific topic, stay on that topic — don't generalize
-5. Use numbers, specifics, and concrete examples wherever possible
-6. Every bullet should deliver value on its own — no filler
-7. NEVER use AI slop words: "delve", "moreover", "it's worth noting", "landscape", "game-changer"
-8. Respond with ONLY the JSON object, no markdown fences, no explanation`;
-
-    contentBlocks.push({ type: "text", text: prompt });
+    contentBlocks.push({ type: "text", text: userPrompt });
 
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 4000,
+      max_tokens: 16000,
+      system: systemPrompt,
       messages: [{ role: "user", content: contentBlocks }],
     });
 
-    const text = response.content
+    let html = response.content
       .filter((block) => block.type === "text")
       .map((block) => (block.type === "text" ? block.text : ""))
       .join("");
 
-    // Parse JSON — handle potential markdown fencing
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [
-      null,
-      text,
-    ];
-    const parsed = JSON.parse(jsonMatch[1]!.trim());
+    // Strip markdown fences if present
+    const fenceMatch = html.match(/```(?:html)?\s*([\s\S]*?)```/);
+    if (fenceMatch) {
+      html = fenceMatch[1]!.trim();
+    }
 
-    return NextResponse.json({ content: parsed });
+    // Ensure it starts with <!DOCTYPE html> or <html
+    if (!html.startsWith("<!DOCTYPE") && !html.startsWith("<html")) {
+      // Try to find the HTML start
+      const docIdx = html.indexOf("<!DOCTYPE");
+      const htmlIdx = html.indexOf("<html");
+      const startIdx = docIdx >= 0 ? docIdx : htmlIdx;
+      if (startIdx > 0) {
+        html = html.substring(startIdx);
+      }
+    }
+
+    return NextResponse.json({ html });
   } catch (error) {
     console.error("Studio generate error:", error);
-    const message =
-      error instanceof Error ? error.message : "Generation failed";
+    const message = error instanceof Error ? error.message : "Generation failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
