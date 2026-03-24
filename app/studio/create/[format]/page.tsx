@@ -13,6 +13,7 @@ import { InfographicRenderer } from "@/components/studio/renderers/infographic-r
 import { CheatsheetRenderer } from "@/components/studio/renderers/cheatsheet-renderer";
 import { CarouselRenderer } from "@/components/studio/renderers/carousel-renderer";
 import { PostCoverRenderer } from "@/components/studio/renderers/post-cover-renderer";
+import { AIGeneratePanel } from "@/components/studio/ai-generate-panel";
 
 // ─── Default content ────────────────────────────────────────────────────────
 
@@ -1192,6 +1193,13 @@ export default function CreatePage({
             flexShrink: 0,
           }}
         >
+          <AIGeneratePanel
+            format={format}
+            onGenerated={(generated) =>
+              setContent(generated as unknown as ContentMap[FormatType])
+            }
+          />
+
           <div
             style={{
               fontSize: 12,
