@@ -1,4 +1,4 @@
-export type ThemeKey = "light" | "dark" | "handwriting";
+export type ThemeKey = "light" | "dark" | "expressive";
 
 export interface Theme {
   key: ThemeKey;
@@ -41,27 +41,17 @@ export const THEMES: Record<ThemeKey, Theme> = {
     headingFont: "'Bebas Neue', sans-serif",
     bodyFont: "'DM Sans', sans-serif",
   },
-  handwriting: {
-    key: "handwriting",
-    label: "Handwriting",
-    bg: "#F5F0E8",
-    text: "#2D2A26",
+  expressive: {
+    key: "expressive",
+    label: "Expressive",
+    bg: "#FFFFFF",
+    text: "#111111",
     accent: "#DA4E24",
-    secondary: "#E8E0D0",
-    border: "#D4C9B8",
-    muted: "#8A857D",
+    secondary: "#F7F7F7",
+    border: "#E5E5E5",
+    muted: "#666666",
     cardBg: "#FFFFFF",
-    headingFont: "'Caveat', cursive",
+    headingFont: "'Bebas Neue', sans-serif",
     bodyFont: "'DM Sans', sans-serif",
   },
 };
-
-export const HANDWRITING_SECTION_COLORS = [
-  { bg: "#D4EDDA", border: "#A8D5B5", badge: "#2D6A4F", text: "#1B4332" },
-  { bg: "#FFF9C4", border: "#F9E784", badge: "#A16207", text: "#713F12" },
-  { bg: "#FFE0B2", border: "#FFCC80", badge: "#C2410C", text: "#7C2D12" },
-  { bg: "#E8F5E9", border: "#C8E6C9", badge: "#166534", text: "#14532D" },
-  { bg: "#FFF3E0", border: "#FFE0B2", badge: "#C2410C", text: "#7C2D12" },
-  { bg: "#E3F2FD", border: "#BBDEFB", badge: "#1565C0", text: "#0D47A1" },
-  { bg: "#FCE4EC", border: "#F8BBD0", badge: "#AD1457", text: "#880E4F" },
-];

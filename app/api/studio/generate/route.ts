@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { BREW360_SKILL } from "@/lib/360brew-skill";
 
 const MODEL = "claude-sonnet-4-20250514";
 
@@ -25,7 +26,7 @@ const FORMAT_SCHEMAS: Record<string, string> = {
   ]
 }
 Requirements:
-- 3 metrics with punchy short values (use %, ×, K+, etc.)
+- 3 metrics with punchy short values (use %, x, K+, etc.)
 - 3-6 sections, each with exactly 4 bullets
 - Bullets should be concise (under 8 words each)
 - Title should stop the scroll — bold claim or surprising stat`,
@@ -137,8 +138,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build the text prompt
-    let prompt = `You are a LinkedIn content designer who creates high-performing visual content. You've been given reference material (text and/or images) to use as inspiration and source material.
+    // Build the text prompt with 360Brew skill injected
+    let prompt = `${BREW360_SKILL}
+
+You are a LinkedIn content designer who creates high-performing visual content optimized for the 360Brew algorithm. You've been given reference material (text and/or images) to use as inspiration and source material.
 
 YOUR TASK: Analyze the references and generate structured content for a LinkedIn ${format.replace("-", " ")}.
 
@@ -176,7 +179,8 @@ IMPORTANT RULES:
 4. If the reference is about a specific topic, stay on that topic — don't generalize
 5. Use numbers, specifics, and concrete examples wherever possible
 6. Every bullet should deliver value on its own — no filler
-7. Respond with ONLY the JSON object, no markdown fences, no explanation`;
+7. NEVER use AI slop words: "delve", "moreover", "it's worth noting", "landscape", "game-changer"
+8. Respond with ONLY the JSON object, no markdown fences, no explanation`;
 
     contentBlocks.push({ type: "text", text: prompt });
 

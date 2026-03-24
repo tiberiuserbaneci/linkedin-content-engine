@@ -2,6 +2,9 @@
 
 import { CarouselContent } from "@/lib/studio-types";
 import { Theme } from "@/lib/studio-themes";
+import { getCardColor } from "@/lib/layout-engine";
+import { getIconForKeyword } from "@/lib/icons";
+import { Icon } from "@iconify/react";
 
 interface Props {
   content: CarouselContent;
@@ -11,14 +14,13 @@ interface Props {
 
 export function CarouselRenderer({ content, theme, slideIndex }: Props) {
   const totalContentSlides = content.slides.length;
-  // slideIndex 0 = title, 1..n = content slides, last = CTA
   const isTitleSlide = slideIndex === 0;
   const isCtaSlide = slideIndex === totalContentSlides + 1;
   const contentSlideData =
     !isTitleSlide && !isCtaSlide ? content.slides[slideIndex - 1] : null;
 
   const isDark = theme.key === "dark";
-  const isHandwriting = theme.key === "handwriting";
+  const isExpressive = theme.key === "expressive";
 
   return (
     <div
@@ -48,7 +50,6 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
             padding: "80px 100px",
           }}
         >
-          {/* Decorative large number */}
           <div
             style={{
               fontSize: 280,
@@ -65,7 +66,6 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
           >
             01
           </div>
-
           <div
             style={{
               fontSize: 16,
@@ -81,7 +81,7 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
           </div>
           <div
             style={{
-              fontSize: isHandwriting ? 96 : 112,
+              fontSize: isExpressive ? 96 : 112,
               fontFamily: theme.headingFont,
               color: theme.text,
               lineHeight: 0.95,
@@ -142,7 +142,7 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
           />
           <div
             style={{
-              fontSize: isHandwriting ? 80 : 96,
+              fontSize: isExpressive ? 80 : 96,
               fontFamily: theme.headingFont,
               color: theme.text,
               lineHeight: 1.0,
@@ -167,7 +167,7 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
               marginTop: 20,
               padding: "16px 40px",
               backgroundColor: theme.accent,
-              borderRadius: 8,
+              borderRadius: isExpressive ? 12 : 8,
               fontSize: 20,
               fontWeight: 700,
               color: "#FFFFFF",
@@ -188,7 +188,6 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
             padding: "60px 100px",
           }}
         >
-          {/* Slide number */}
           <div
             style={{
               fontSize: 14,
@@ -203,10 +202,9 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
             {String(slideIndex).padStart(2, "0")} / {String(totalContentSlides).padStart(2, "0")}
           </div>
 
-          {/* Slide title */}
           <div
             style={{
-              fontSize: isHandwriting ? 68 : 80,
+              fontSize: isExpressive ? 68 : 80,
               fontFamily: theme.headingFont,
               color: theme.text,
               lineHeight: 1.0,
@@ -217,7 +215,6 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
             {contentSlideData.title}
           </div>
 
-          {/* Divider */}
           <div
             style={{
               width: 60,
@@ -228,7 +225,6 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
             }}
           />
 
-          {/* Bullets */}
           <div
             style={{
               display: "flex",
@@ -236,46 +232,93 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
               gap: 20,
             }}
           >
-            {contentSlideData.bullets.filter(Boolean).map((bullet, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 16,
-                }}
-              >
+            {contentSlideData.bullets.filter(Boolean).map((bullet, i) => {
+              const iconName = getIconForKeyword(bullet);
+              const color = getCardColor(i);
+
+              if (isExpressive) {
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 16,
+                      backgroundColor: color.bg,
+                      borderRadius: 12,
+                      padding: "14px 18px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        backgroundColor: "#FFFFFF",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon icon={iconName} width={20} height={20} style={{ color: color.title }} />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 20,
+                        color: color.title,
+                        lineHeight: 1.5,
+                        fontFamily: theme.bodyFont,
+                        paddingTop: 6,
+                      }}
+                    >
+                      {bullet}
+                    </span>
+                  </div>
+                );
+              }
+
+              return (
                 <div
+                  key={i}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    backgroundColor: theme.accent,
-                    color: "#FFFFFF",
-                    fontSize: 14,
-                    fontWeight: 700,
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    fontFamily: theme.bodyFont,
+                    alignItems: "flex-start",
+                    gap: 16,
                   }}
                 >
-                  {i + 1}
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      backgroundColor: theme.accent,
+                      color: "#FFFFFF",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      fontFamily: theme.bodyFont,
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 20,
+                      color: theme.text,
+                      lineHeight: 1.5,
+                      fontFamily: theme.bodyFont,
+                      paddingTop: 4,
+                    }}
+                  >
+                    {bullet}
+                  </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: 20,
-                    color: theme.text,
-                    lineHeight: 1.5,
-                    fontFamily: theme.bodyFont,
-                    paddingTop: 4,
-                  }}
-                >
-                  {bullet}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -288,9 +331,6 @@ export function CarouselRenderer({ content, theme, slideIndex }: Props) {
           backgroundColor: theme.secondary,
           flexShrink: 0,
           borderTop: `1px solid ${theme.border}`,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 100px",
         }}
       />
     </div>

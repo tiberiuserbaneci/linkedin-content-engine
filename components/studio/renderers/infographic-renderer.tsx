@@ -1,7 +1,14 @@
 "use client";
 
 import { InfographicContent } from "@/lib/studio-types";
-import { Theme, HANDWRITING_SECTION_COLORS } from "@/lib/studio-themes";
+import { Theme } from "@/lib/studio-themes";
+import {
+  getCardStyle,
+  getCardColor,
+  CARD_STYLE_ROTATION,
+} from "@/lib/layout-engine";
+import { getIconForKeyword } from "@/lib/icons";
+import { Icon } from "@iconify/react";
 
 interface Props {
   content: InfographicContent;
@@ -9,7 +16,7 @@ interface Props {
 }
 
 export function InfographicRenderer({ content, theme }: Props) {
-  const isHandwriting = theme.key === "handwriting";
+  const isExpressive = theme.key === "expressive";
 
   return (
     <div
@@ -34,7 +41,6 @@ export function InfographicRenderer({ content, theme }: Props) {
           borderBottom: `2px solid ${theme.border}`,
         }}
       >
-        {/* Eyebrow */}
         <div
           style={{
             fontSize: 18,
@@ -48,22 +54,18 @@ export function InfographicRenderer({ content, theme }: Props) {
         >
           {content.eyebrow}
         </div>
-
-        {/* Title */}
         <div
           style={{
-            fontSize: isHandwriting ? 80 : 96,
+            fontSize: isExpressive ? 72 : 96,
             fontFamily: theme.headingFont,
             color: theme.text,
             lineHeight: 1.0,
-            letterSpacing: isHandwriting ? "0.01em" : "0.02em",
+            letterSpacing: "0.02em",
             marginBottom: 16,
           }}
         >
           {content.title}
         </div>
-
-        {/* Subtitle */}
         <div
           style={{
             fontSize: 22,
@@ -144,62 +146,43 @@ export function InfographicRenderer({ content, theme }: Props) {
         }}
       >
         {content.sections.map((section, i) => {
-          const hwColor =
-            HANDWRITING_SECTION_COLORS[i % HANDWRITING_SECTION_COLORS.length];
+          if (isExpressive) {
+            return (
+              <ExpressiveCard
+                key={i}
+                index={i}
+                title={section.title}
+                items={section.bullets}
+                theme={theme}
+              />
+            );
+          }
+
           return (
             <div
               key={i}
               style={{
                 width: "calc(50% - 12px)",
-                backgroundColor: isHandwriting ? hwColor.bg : theme.cardBg,
-                border: `2px solid ${isHandwriting ? hwColor.border : theme.border}`,
-                borderRadius: isHandwriting ? 16 : 8,
+                backgroundColor: theme.cardBg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: 8,
                 padding: "24px 28px",
                 boxSizing: "border-box",
-                boxShadow: isHandwriting
-                  ? "3px 3px 0px rgba(0,0,0,0.08)"
-                  : "none",
               }}
             >
-              {/* Section title */}
               <div
                 style={{
-                  fontSize: isHandwriting ? 22 : 18,
-                  fontFamily: isHandwriting ? theme.headingFont : theme.bodyFont,
-                  fontWeight: isHandwriting ? 400 : 700,
-                  color: isHandwriting ? hwColor.text : theme.text,
+                  fontSize: 18,
+                  fontFamily: theme.bodyFont,
+                  fontWeight: 700,
+                  color: theme.text,
                   marginBottom: 14,
-                  borderBottom: `2px solid ${isHandwriting ? hwColor.border : theme.accent}`,
+                  borderBottom: `2px solid ${theme.accent}`,
                   paddingBottom: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
                 }}
               >
-                {isHandwriting && (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      backgroundColor: hwColor.badge,
-                      color: "#FFFFFF",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      fontSize: 13,
-                      fontFamily: theme.bodyFont,
-                      fontWeight: 700,
-                      textAlign: "center",
-                      lineHeight: "24px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                )}
                 {section.title}
               </div>
-
-              {/* Bullets */}
               {section.bullets.filter(Boolean).map((bullet, j) => (
                 <div
                   key={j}
@@ -210,46 +193,20 @@ export function InfographicRenderer({ content, theme }: Props) {
                     marginBottom: 8,
                   }}
                 >
-                  {isHandwriting ? (
-                    <div
-                      style={{
-                        width: 18,
-                        height: 18,
-                        border: `2px solid ${hwColor.badge}`,
-                        borderRadius: 4,
-                        flexShrink: 0,
-                        marginTop: 2,
-                        backgroundColor: "#FFFFFF",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          backgroundColor: hwColor.badge,
-                          borderRadius: 2,
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        backgroundColor: theme.accent,
-                        flexShrink: 0,
-                        marginTop: 8,
-                      }}
-                    />
-                  )}
+                  <div
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: theme.accent,
+                      flexShrink: 0,
+                      marginTop: 8,
+                    }}
+                  />
                   <span
                     style={{
                       fontSize: 15,
-                      color: isHandwriting ? hwColor.text : theme.text,
+                      color: theme.text,
                       lineHeight: 1.5,
                       fontFamily: theme.bodyFont,
                     }}
@@ -271,27 +228,331 @@ export function InfographicRenderer({ content, theme }: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: theme.secondary,
+          backgroundColor: isExpressive ? "#1A1A1A" : theme.secondary,
         }}
       >
         <div
           style={{
             fontSize: 14,
-            color: theme.muted,
+            color: isExpressive ? "#FFFFFF" : theme.muted,
             fontFamily: theme.bodyFont,
           }}
         >
           LinkedIn Content Engine
         </div>
-        <div
-          style={{
-            width: 32,
-            height: 6,
-            backgroundColor: theme.accent,
-            borderRadius: 3,
-          }}
-        />
+        {isExpressive ? (
+          <div
+            style={{
+              padding: "6px 16px",
+              backgroundColor: theme.accent,
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#FFFFFF",
+              fontFamily: theme.bodyFont,
+            }}
+          >
+            Follow for more
+          </div>
+        ) : (
+          <div
+            style={{
+              width: 32,
+              height: 6,
+              backgroundColor: theme.accent,
+              borderRadius: 3,
+            }}
+          />
+        )}
       </div>
     </div>
   );
 }
+
+/* ── Expressive Card Component ── */
+
+function ExpressiveCard({
+  index,
+  title,
+  items,
+  theme,
+}: {
+  index: number;
+  title: string;
+  items: string[];
+  theme: Theme;
+}) {
+  const style = getCardStyle(index);
+  const color = getCardColor(index);
+  const iconName = getIconForKeyword(title);
+
+  switch (style) {
+    case "A":
+      // Solid colored background
+      return (
+        <div
+          style={{
+            width: "calc(50% - 12px)",
+            backgroundColor: color.bg,
+            borderRadius: 16,
+            padding: "24px 28px",
+            boxSizing: "border-box",
+            boxShadow: `0 4px 16px ${color.shadow}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: color.title,
+              marginBottom: 14,
+              paddingBottom: 10,
+              borderBottom: `2px solid rgba(0,0,0,0.1)`,
+            }}
+          >
+            {title}
+          </div>
+          {items.filter(Boolean).map((item, j) => (
+            <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+              <Icon icon={iconName} width={16} height={16} style={{ flexShrink: 0, marginTop: 3, color: color.title }} />
+              <span style={{ fontSize: 14, color: color.title, lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "B":
+      // Dark background with orange title
+      return (
+        <div
+          style={{
+            width: "calc(50% - 12px)",
+            backgroundColor: "#1A1A1A",
+            borderRadius: 16,
+            padding: "24px 28px",
+            boxSizing: "border-box",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#DA4E24",
+              marginBottom: 14,
+              paddingBottom: 10,
+              borderBottom: "2px solid #333",
+            }}
+          >
+            {title}
+          </div>
+          {items.filter(Boolean).map((item, j) => (
+            <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+              <Icon icon={iconName} width={16} height={16} style={{ flexShrink: 0, marginTop: 3, color: "#DA4E24" }} />
+              <span style={{ fontSize: 14, color: "#FFFFFF", lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "C":
+      // Large faded number in background
+      return (
+        <div
+          style={{
+            width: "calc(50% - 12px)",
+            backgroundColor: "#FFFFFF",
+            border: "2px solid #E5E5E5",
+            borderRadius: 16,
+            padding: "24px 28px",
+            boxSizing: "border-box",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              right: 12,
+              top: -10,
+              fontSize: 120,
+              fontFamily: theme.headingFont,
+              color: "rgba(0,0,0,0.05)",
+              lineHeight: 1,
+              userSelect: "none",
+              pointerEvents: "none",
+            }}
+          >
+            {String(index + 1).padStart(2, "0")}
+          </div>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: theme.text,
+              marginBottom: 14,
+              paddingBottom: 10,
+              borderBottom: `2px solid ${theme.accent}`,
+              position: "relative",
+            }}
+          >
+            {title}
+          </div>
+          {items.filter(Boolean).map((item, j) => (
+            <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8, position: "relative" }}>
+              <Icon icon={iconName} width={16} height={16} style={{ flexShrink: 0, marginTop: 3, color: theme.accent }} />
+              <span style={{ fontSize: 14, color: theme.text, lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "D":
+      // Two-column mini-table style
+      return (
+        <div
+          style={{
+            width: "calc(50% - 12px)",
+            backgroundColor: "#F7F7F7",
+            borderRadius: 16,
+            padding: "24px 28px",
+            boxSizing: "border-box",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: theme.text,
+              marginBottom: 14,
+              paddingBottom: 10,
+              borderBottom: `2px solid ${theme.accent}`,
+            }}
+          >
+            {title}
+          </div>
+          {items.filter(Boolean).map((item, j) => (
+            <div
+              key={j}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "8px 0",
+                borderBottom: j < items.filter(Boolean).length - 1 ? "1px solid #E5E5E5" : "none",
+              }}
+            >
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  backgroundColor: theme.accent,
+                  color: "#FFF",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  marginRight: 12,
+                }}
+              >
+                {j + 1}
+              </div>
+              <span style={{ fontSize: 14, color: theme.text, lineHeight: 1.4, fontFamily: theme.bodyFont }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "E":
+      // Icon-heavy: large icon centered top
+      return (
+        <div
+          style={{
+            width: "calc(50% - 12px)",
+            backgroundColor: "#FFFFFF",
+            border: "2px solid #E5E5E5",
+            borderRadius: 16,
+            padding: "24px 28px",
+            boxSizing: "border-box",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ marginBottom: 12, display: "flex", justifyContent: "center" }}>
+            <Icon icon={iconName} width={48} height={48} style={{ color: theme.accent }} />
+          </div>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: theme.text,
+              marginBottom: 14,
+              fontFamily: theme.bodyFont,
+            }}
+          >
+            {title}
+          </div>
+          {items.filter(Boolean).slice(0, 4).map((item, j) => (
+            <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8, textAlign: "left" }}>
+              <Icon icon={iconName} width={14} height={14} style={{ flexShrink: 0, marginTop: 4, color: theme.accent }} />
+              <span style={{ fontSize: 14, color: theme.text, lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "F":
+      // Quote/callout style
+      return (
+        <div
+          style={{
+            width: "calc(50% - 12px)",
+            backgroundColor: color.bg,
+            borderRadius: 16,
+            padding: "24px 28px",
+            boxSizing: "border-box",
+            borderLeft: `6px solid ${theme.accent}`,
+            boxShadow: `0 4px 16px ${color.shadow}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 48,
+              fontFamily: theme.headingFont,
+              color: theme.accent,
+              lineHeight: 1,
+              marginBottom: 4,
+              opacity: 0.6,
+            }}
+          >
+            &ldquo;
+          </div>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: color.title,
+              marginBottom: 14,
+              lineHeight: 1.3,
+            }}
+          >
+            {title}
+          </div>
+          {items.filter(Boolean).map((item, j) => (
+            <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+              <Icon icon={iconName} width={16} height={16} style={{ flexShrink: 0, marginTop: 3, color: color.title }} />
+              <span style={{ fontSize: 14, color: color.title, lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+    default:
+      return null;
+  }
+}
+
+// Force client to suppress unused import warnings
+void CARD_STYLE_ROTATION;

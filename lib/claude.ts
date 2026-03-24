@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Post, ContentAnalysis, ContentIdea, PatternMatch } from "./database.types";
+import { BREW360_SKILL } from "./360brew-skill";
 
 const MODEL = "claude-sonnet-4-20250514";
 
@@ -36,7 +37,9 @@ function tierPosts(posts: Post[]): TieredPost[] {
   }));
 }
 
-const ANALYSIS_PROMPT = `You are an expert LinkedIn content strategist. Analyse the following LinkedIn posts from a single creator. Each post is labelled with its performance tier: TOP_PERFORMER (top 30% by reactions), BASELINE (middle 40%), or LOW_PERFORMER (bottom 30%).
+const ANALYSIS_PROMPT = `${BREW360_SKILL}
+
+You are an expert LinkedIn content strategist. Analyse the following LinkedIn posts from a single creator. Each post is labelled with its performance tier: TOP_PERFORMER (top 30% by reactions), BASELINE (middle 40%), or LOW_PERFORMER (bottom 30%).
 
 Your task: Generate a comprehensive Winning Content Profile with exactly these 10 sections. Be specific, data-driven, and actionable.
 
@@ -159,7 +162,9 @@ export async function analyzeProfile(
   };
 }
 
-const IDEAS_PROMPT = `You are an expert LinkedIn content strategist. Based on the Winning Content Profile below, generate 10 content ideas calibrated to this creator's winning patterns.
+const IDEAS_PROMPT = `${BREW360_SKILL}
+
+You are an expert LinkedIn content strategist. Based on the Winning Content Profile below, generate 10 content ideas calibrated to this creator's winning patterns.
 
 IMPORTANT RULES:
 1. First, use the web_search tool to find 3-5 trending topics in the creator's space

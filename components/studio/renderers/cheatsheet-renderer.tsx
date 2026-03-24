@@ -1,7 +1,10 @@
 "use client";
 
 import { CheatsheetContent } from "@/lib/studio-types";
-import { Theme, HANDWRITING_SECTION_COLORS } from "@/lib/studio-themes";
+import { Theme } from "@/lib/studio-themes";
+import { getCardStyle, getCardColor } from "@/lib/layout-engine";
+import { getIconForKeyword } from "@/lib/icons";
+import { Icon } from "@iconify/react";
 
 interface Props {
   content: CheatsheetContent;
@@ -9,7 +12,7 @@ interface Props {
 }
 
 export function CheatsheetRenderer({ content, theme }: Props) {
-  const isHandwriting = theme.key === "handwriting";
+  const isExpressive = theme.key === "expressive";
   const numSections = content.sections.length;
   const useGrid = numSections >= 3;
 
@@ -49,11 +52,11 @@ export function CheatsheetRenderer({ content, theme }: Props) {
         </div>
         <div
           style={{
-            fontSize: isHandwriting ? 64 : 76,
+            fontSize: isExpressive ? 64 : 76,
             fontFamily: theme.headingFont,
             color: theme.text,
             lineHeight: 1.0,
-            letterSpacing: isHandwriting ? "0.01em" : "0.02em",
+            letterSpacing: "0.02em",
             marginBottom: 12,
           }}
         >
@@ -83,65 +86,137 @@ export function CheatsheetRenderer({ content, theme }: Props) {
         }}
       >
         {content.sections.map((section, i) => {
-          const hwColor =
-            HANDWRITING_SECTION_COLORS[i % HANDWRITING_SECTION_COLORS.length];
           const colWidth =
             useGrid
               ? numSections === 4
                 ? "calc(50% - 10px)"
                 : "100%"
               : "100%";
+
+          if (isExpressive) {
+            const style = getCardStyle(i);
+            const color = getCardColor(i);
+            const iconName = getIconForKeyword(section.title);
+
+            if (style === "B") {
+              return (
+                <div
+                  key={i}
+                  style={{
+                    width: colWidth,
+                    backgroundColor: "#1A1A1A",
+                    borderRadius: 16,
+                    padding: "24px 28px",
+                    boxSizing: "border-box",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <div style={{ fontSize: 17, fontWeight: 700, color: "#DA4E24", marginBottom: 14, paddingBottom: 10, borderBottom: "2px solid #333" }}>
+                    {section.title}
+                  </div>
+                  {section.items.filter(Boolean).map((item, j) => (
+                    <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+                      <Icon icon={iconName} width={14} height={14} style={{ flexShrink: 0, marginTop: 3, color: "#DA4E24" }} />
+                      <span style={{ fontSize: 14, color: "#FFFFFF", lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+
+            if (style === "E") {
+              return (
+                <div
+                  key={i}
+                  style={{
+                    width: colWidth,
+                    backgroundColor: "#FFFFFF",
+                    border: "2px solid #E5E5E5",
+                    borderRadius: 16,
+                    padding: "24px 28px",
+                    boxSizing: "border-box",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ marginBottom: 10, display: "flex", justifyContent: "center" }}>
+                    <Icon icon={iconName} width={40} height={40} style={{ color: theme.accent }} />
+                  </div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: theme.text, marginBottom: 14 }}>
+                    {section.title}
+                  </div>
+                  {section.items.filter(Boolean).map((item, j) => (
+                    <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8, textAlign: "left" }}>
+                      <Icon icon={iconName} width={14} height={14} style={{ flexShrink: 0, marginTop: 3, color: theme.accent }} />
+                      <span style={{ fontSize: 14, color: theme.text, lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+
+            // Default colored card (A, C, D, F)
+            return (
+              <div
+                key={i}
+                style={{
+                  width: colWidth,
+                  backgroundColor: color.bg,
+                  borderRadius: 16,
+                  padding: "24px 28px",
+                  boxSizing: "border-box",
+                  boxShadow: `0 4px 16px ${color.shadow}`,
+                  position: "relative",
+                  overflow: "hidden",
+                  borderLeft: style === "F" ? `6px solid ${theme.accent}` : "none",
+                }}
+              >
+                {style === "C" && (
+                  <div style={{ position: "absolute", right: 12, top: -10, fontSize: 100, fontFamily: theme.headingFont, color: "rgba(0,0,0,0.05)", lineHeight: 1, userSelect: "none", pointerEvents: "none" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
+                )}
+                {style === "F" && (
+                  <div style={{ fontSize: 36, fontFamily: theme.headingFont, color: theme.accent, lineHeight: 1, marginBottom: 4, opacity: 0.6 }}>
+                    &ldquo;
+                  </div>
+                )}
+                <div style={{ fontSize: 17, fontWeight: 700, color: color.title, marginBottom: 14, paddingBottom: 10, borderBottom: "2px solid rgba(0,0,0,0.1)", position: "relative" }}>
+                  {section.title}
+                </div>
+                {section.items.filter(Boolean).map((item, j) => (
+                  <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8, position: "relative" }}>
+                    <Icon icon={iconName} width={14} height={14} style={{ flexShrink: 0, marginTop: 3, color: color.title }} />
+                    <span style={{ fontSize: 14, color: color.title, lineHeight: 1.5, fontFamily: theme.bodyFont }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          // Light/Dark theme
           return (
             <div
               key={i}
               style={{
                 width: colWidth,
-                backgroundColor: isHandwriting ? hwColor.bg : theme.cardBg,
-                border: `2px solid ${isHandwriting ? hwColor.border : theme.border}`,
-                borderRadius: isHandwriting ? 16 : 8,
+                backgroundColor: theme.cardBg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: 8,
                 padding: "24px 28px",
                 boxSizing: "border-box",
-                boxShadow: isHandwriting
-                  ? "3px 3px 0px rgba(0,0,0,0.07)"
-                  : "none",
               }}
             >
               <div
                 style={{
-                  fontSize: isHandwriting ? 22 : 17,
-                  fontFamily: isHandwriting ? theme.headingFont : theme.bodyFont,
-                  fontWeight: isHandwriting ? 400 : 700,
-                  color: isHandwriting ? hwColor.text : theme.text,
+                  fontSize: 17,
+                  fontFamily: theme.bodyFont,
+                  fontWeight: 700,
+                  color: theme.text,
                   marginBottom: 14,
-                  borderBottom: `2px solid ${
-                    isHandwriting ? hwColor.border : theme.accent
-                  }`,
+                  borderBottom: `2px solid ${theme.accent}`,
                   paddingBottom: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
                 }}
               >
-                {isHandwriting && (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      backgroundColor: hwColor.badge,
-                      color: "#FFFFFF",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      fontSize: 13,
-                      fontFamily: theme.bodyFont,
-                      fontWeight: 700,
-                      textAlign: "center",
-                      lineHeight: "24px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                )}
                 {section.title}
               </div>
               {section.items.filter(Boolean).map((item, j) => (
@@ -154,46 +229,20 @@ export function CheatsheetRenderer({ content, theme }: Props) {
                     marginBottom: 8,
                   }}
                 >
-                  {isHandwriting ? (
-                    <div
-                      style={{
-                        width: 16,
-                        height: 16,
-                        border: `2px solid ${hwColor.badge}`,
-                        borderRadius: 4,
-                        flexShrink: 0,
-                        marginTop: 3,
-                        backgroundColor: "#FFFFFF",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 8,
-                          height: 8,
-                          backgroundColor: hwColor.badge,
-                          borderRadius: 2,
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        backgroundColor: theme.accent,
-                        flexShrink: 0,
-                        marginTop: 7,
-                      }}
-                    />
-                  )}
+                  <div
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: theme.accent,
+                      flexShrink: 0,
+                      marginTop: 7,
+                    }}
+                  />
                   <span
                     style={{
                       fontSize: 14,
-                      color: isHandwriting ? hwColor.text : theme.text,
+                      color: theme.text,
                       lineHeight: 1.5,
                       fontFamily: theme.bodyFont,
                     }}
@@ -214,11 +263,10 @@ export function CheatsheetRenderer({ content, theme }: Props) {
             <div
               style={{
                 border: `2px solid ${theme.border}`,
-                borderRadius: 8,
+                borderRadius: isExpressive ? 16 : 8,
                 overflow: "hidden",
               }}
             >
-              {/* Header row */}
               <div
                 style={{
                   display: "flex",
@@ -245,14 +293,12 @@ export function CheatsheetRenderer({ content, theme }: Props) {
                   </div>
                 ))}
               </div>
-              {/* Data rows */}
               {content.comparison.rows.map((row, ri) => (
                 <div
                   key={ri}
                   style={{
                     display: "flex",
-                    backgroundColor:
-                      ri % 2 === 0 ? theme.cardBg : theme.secondary,
+                    backgroundColor: ri % 2 === 0 ? theme.cardBg : theme.secondary,
                     borderTop: `1px solid ${theme.border}`,
                   }}
                 >
@@ -298,27 +344,16 @@ export function CheatsheetRenderer({ content, theme }: Props) {
         <div style={{ padding: "0 64px 32px" }}>
           <div
             style={{
-              backgroundColor: isHandwriting
-                ? HANDWRITING_SECTION_COLORS[0].bg
-                : theme.secondary,
-              border: `2px solid ${
-                isHandwriting ? HANDWRITING_SECTION_COLORS[0].border : theme.accent
-              }`,
-              borderRadius: 10,
+              backgroundColor: isExpressive ? "#FFF3CD" : theme.secondary,
+              border: `2px solid ${isExpressive ? "#F9E784" : theme.accent}`,
+              borderRadius: isExpressive ? 16 : 10,
               padding: "20px 24px",
               display: "flex",
               alignItems: "flex-start",
               gap: 14,
             }}
           >
-            <span
-              style={{
-                fontSize: 22,
-                flexShrink: 0,
-                lineHeight: 1,
-                marginTop: 2,
-              }}
-            >
+            <span style={{ fontSize: 22, flexShrink: 0, lineHeight: 1, marginTop: 2 }}>
               💡
             </span>
             <div>
@@ -357,28 +392,42 @@ export function CheatsheetRenderer({ content, theme }: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: isHandwriting
-            ? HANDWRITING_SECTION_COLORS[0].bg
-            : theme.secondary,
+          backgroundColor: isExpressive ? "#1A1A1A" : theme.secondary,
         }}
       >
         <div
           style={{
             fontSize: 13,
-            color: theme.muted,
+            color: isExpressive ? "#FFFFFF" : theme.muted,
             fontFamily: theme.bodyFont,
           }}
         >
           LinkedIn Content Engine
         </div>
-        <div
-          style={{
-            width: 32,
-            height: 6,
-            backgroundColor: theme.accent,
-            borderRadius: 3,
-          }}
-        />
+        {isExpressive ? (
+          <div
+            style={{
+              padding: "6px 16px",
+              backgroundColor: theme.accent,
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#FFFFFF",
+              fontFamily: theme.bodyFont,
+            }}
+          >
+            Follow for more
+          </div>
+        ) : (
+          <div
+            style={{
+              width: 32,
+              height: 6,
+              backgroundColor: theme.accent,
+              borderRadius: 3,
+            }}
+          />
+        )}
       </div>
     </div>
   );

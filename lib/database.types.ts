@@ -82,7 +82,7 @@ export interface PatternMatch {
 }
 
 export type AssetFormat = "infographic" | "cheatsheet" | "carousel" | "post-cover";
-export type AssetTheme = "light" | "dark" | "handwriting";
+export type AssetTheme = "light" | "dark" | "expressive";
 
 export interface ContentAsset {
   id: string;

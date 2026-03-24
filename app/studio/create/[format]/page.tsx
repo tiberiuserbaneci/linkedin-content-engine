@@ -963,6 +963,11 @@ export default function CreatePage({
   const [carouselSlide, setCarouselSlide] = useState(0);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [generatingPost, setGeneratingPost] = useState(false);
+  const [linkedinPost, setLinkedinPost] = useState("");
+  const [firstComment, setFirstComment] = useState<string | null>(null);
+  const [voice, setVoice] = useState<"tested" | "framework" | "contrarian">("framework");
+  const [ctaMode, setCtaMode] = useState<"in_post" | "first_comment" | "none">("first_comment");
   const exportRef = useRef<HTMLDivElement>(null);
 
   const currentTheme = THEMES[theme];
@@ -997,11 +1002,16 @@ export default function CreatePage({
     setExporting(true);
     try {
       const html2canvas = (await import("html2canvas-pro")).default;
-      const canvas = await html2canvas(exportRef.current, {
+      const el = exportRef.current;
+      const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
+        scrollY: -window.scrollY,
+        windowHeight: el.scrollHeight,
+        height: el.scrollHeight,
+        width: el.scrollWidth,
       });
       const url = canvas.toDataURL("image/png");
       const a = document.createElement("a");
@@ -1034,11 +1044,16 @@ export default function CreatePage({
         setCarouselSlide(si);
         await new Promise((r) => setTimeout(r, 500));
         if (!exportRef.current) break;
-        const canvas = await html2canvas(exportRef.current, {
+        const pdfEl = exportRef.current;
+        const canvas = await html2canvas(pdfEl, {
           scale: 1,
           useCORS: true,
           allowTaint: true,
           logging: false,
+          scrollY: -window.scrollY,
+          windowHeight: pdfEl.scrollHeight,
+          height: pdfEl.scrollHeight,
+          width: pdfEl.scrollWidth,
         });
         const imgData = canvas.toDataURL("image/jpeg", 0.92);
         if (si > 0) pdf.addPage([1080, 1080]);
@@ -1053,6 +1068,25 @@ export default function CreatePage({
       setCarouselSlide(0);
     }
   }, [content, theme]);
+
+  const handleGeneratePost = useCallback(async () => {
+    setGeneratingPost(true);
+    try {
+      const res = await fetch("/api/studio/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentJson: content, format, voice, ctaMode }),
+      });
+      if (!res.ok) throw new Error("Failed to generate");
+      const data = await res.json();
+      setLinkedinPost(data.post || "");
+      setFirstComment(data.firstComment || null);
+    } catch (e) {
+      console.error("Post generation failed", e);
+    } finally {
+      setGeneratingPost(false);
+    }
+  }, [content, format, voice, ctaMode]);
 
   const previewScale = getPreviewScale(format);
 
@@ -1122,7 +1156,7 @@ export default function CreatePage({
 
         {/* Theme switcher */}
         <div style={{ display: "flex", gap: 6 }}>
-          {(["light", "dark", "handwriting"] as ThemeKey[]).map((t) => (
+          {(["light", "dark", "expressive"] as ThemeKey[]).map((t) => (
             <button
               key={t}
               onClick={() => setTheme(t)}
@@ -1274,6 +1308,201 @@ export default function CreatePage({
             content={content}
             carouselSlide={carouselSlide}
           />
+
+          {/* ── LinkedIn Post & Comment Generator ── */}
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 600,
+              marginTop: 32,
+              border: "1px solid #1E1E1E",
+              borderRadius: 12,
+              backgroundColor: "#111",
+              padding: 24,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#DA4E24",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                marginBottom: 16,
+              }}
+            >
+              LinkedIn Post & First Comment
+            </div>
+
+            {/* Voice toggle */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#666", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+                Voice
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {([
+                  { key: "tested", label: "I tested this" },
+                  { key: "framework", label: "Here's the framework" },
+                  { key: "contrarian", label: "Contrarian take" },
+                ] as const).map((v) => (
+                  <button
+                    key={v.key}
+                    onClick={() => setVoice(v.key)}
+                    style={{
+                      fontSize: 12,
+                      padding: "5px 12px",
+                      borderRadius: 6,
+                      border: `1px solid ${voice === v.key ? "#DA4E24" : "#2A2A2A"}`,
+                      backgroundColor: voice === v.key ? "#DA4E24" : "transparent",
+                      color: voice === v.key ? "#FFF" : "#888",
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA toggle */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#666", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+                CTA Mode
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {([
+                  { key: "in_post", label: "CTA in post" },
+                  { key: "first_comment", label: "CTA in first comment" },
+                  { key: "none", label: "No CTA" },
+                ] as const).map((c) => (
+                  <button
+                    key={c.key}
+                    onClick={() => setCtaMode(c.key)}
+                    style={{
+                      fontSize: 12,
+                      padding: "5px 12px",
+                      borderRadius: 6,
+                      border: `1px solid ${ctaMode === c.key ? "#DA4E24" : "#2A2A2A"}`,
+                      backgroundColor: ctaMode === c.key ? "#DA4E24" : "transparent",
+                      color: ctaMode === c.key ? "#FFF" : "#888",
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Generate button */}
+            <button
+              onClick={handleGeneratePost}
+              disabled={generatingPost}
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                borderRadius: 6,
+                border: "none",
+                backgroundColor: generatingPost ? "#333" : "#DA4E24",
+                color: "#FFF",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: generatingPost ? "not-allowed" : "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                marginBottom: 16,
+              }}
+            >
+              {generatingPost ? "Generating..." : "Generate Post & Comment"}
+            </button>
+
+            {/* Post output */}
+            {linkedinPost && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#666", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+                  Post
+                </div>
+                <textarea
+                  value={linkedinPost}
+                  onChange={(e) => setLinkedinPost(e.target.value)}
+                  style={{
+                    width: "100%",
+                    minHeight: 200,
+                    backgroundColor: "#1A1A1A",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: 6,
+                    color: "#F1F1F1",
+                    fontSize: 13,
+                    padding: "10px 12px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    boxSizing: "border-box",
+                    outline: "none",
+                    resize: "vertical",
+                    lineHeight: 1.6,
+                  }}
+                />
+                <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>
+                  {linkedinPost.length} characters
+                </div>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(linkedinPost); }}
+                  style={{
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: "#888",
+                    background: "none",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: 4,
+                    padding: "4px 10px",
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  Copy post
+                </button>
+              </div>
+            )}
+
+            {/* First comment output */}
+            {firstComment && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#666", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+                  First Comment
+                </div>
+                <div
+                  style={{
+                    backgroundColor: "#1A1A1A",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: 6,
+                    padding: "10px 12px",
+                    fontSize: 13,
+                    color: "#F1F1F1",
+                    lineHeight: 1.5,
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  {firstComment}
+                </div>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(firstComment); }}
+                  style={{
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: "#888",
+                    background: "none",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: 4,
+                    padding: "4px 10px",
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  Copy comment
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -2,6 +2,8 @@
 
 import { PostCoverContent } from "@/lib/studio-types";
 import { Theme } from "@/lib/studio-themes";
+import { getIconForKeyword } from "@/lib/icons";
+import { Icon } from "@iconify/react";
 
 interface Props {
   content: PostCoverContent;
@@ -10,15 +12,14 @@ interface Props {
 
 export function PostCoverRenderer({ content, theme }: Props) {
   const isDark = theme.key === "dark";
-  const isHandwriting = theme.key === "handwriting";
+  const isExpressive = theme.key === "expressive";
+  const iconName = getIconForKeyword(content.eyebrow || content.title);
 
   const bgStyle = isDark
     ? {
         background:
           "linear-gradient(135deg, #0A0A0A 0%, #1A0A05 50%, #0A0A0A 100%)",
       }
-    : isHandwriting
-    ? { backgroundColor: theme.bg }
     : { backgroundColor: theme.bg };
 
   return (
@@ -58,24 +59,38 @@ export function PostCoverRenderer({ content, theme }: Props) {
         }}
       />
 
-      {/* Decorative background text */}
-      <div
-        style={{
-          position: "absolute",
-          right: -20,
-          bottom: -40,
-          fontSize: 320,
-          fontFamily: theme.headingFont,
-          color: isDark
-            ? "rgba(255,255,255,0.03)"
-            : "rgba(0,0,0,0.03)",
-          lineHeight: 1,
-          userSelect: "none",
-          pointerEvents: "none",
-        }}
-      >
-        LI
-      </div>
+      {/* Decorative background */}
+      {isExpressive ? (
+        <div
+          style={{
+            position: "absolute",
+            right: 60,
+            top: "50%",
+            transform: "translateY(-50%)",
+            opacity: 0.06,
+          }}
+        >
+          <Icon icon={iconName} width={320} height={320} style={{ color: theme.text }} />
+        </div>
+      ) : (
+        <div
+          style={{
+            position: "absolute",
+            right: -20,
+            bottom: -40,
+            fontSize: 320,
+            fontFamily: theme.headingFont,
+            color: isDark
+              ? "rgba(255,255,255,0.03)"
+              : "rgba(0,0,0,0.03)",
+            lineHeight: 1,
+            userSelect: "none",
+            pointerEvents: "none",
+          }}
+        >
+          LI
+        </div>
+      )}
 
       {/* Main content */}
       <div
@@ -97,15 +112,21 @@ export function PostCoverRenderer({ content, theme }: Props) {
             textTransform: "uppercase",
             marginBottom: 20,
             fontFamily: theme.bodyFont,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
           }}
         >
+          {isExpressive && (
+            <Icon icon={iconName} width={18} height={18} style={{ color: theme.accent }} />
+          )}
           {content.eyebrow}
         </div>
 
         {/* Title */}
         <div
           style={{
-            fontSize: isHandwriting ? 88 : 100,
+            fontSize: isExpressive ? 88 : 100,
             fontFamily: theme.headingFont,
             color: theme.text,
             lineHeight: 0.95,
@@ -146,7 +167,7 @@ export function PostCoverRenderer({ content, theme }: Props) {
       <div
         style={{
           height: 48,
-          backgroundColor: theme.secondary,
+          backgroundColor: isExpressive ? "#1A1A1A" : theme.secondary,
           borderTop: `2px solid ${theme.border}`,
           display: "flex",
           alignItems: "center",
@@ -157,45 +178,33 @@ export function PostCoverRenderer({ content, theme }: Props) {
         <div
           style={{
             fontSize: 13,
-            color: theme.muted,
+            color: isExpressive ? "#FFFFFF" : theme.muted,
             fontFamily: theme.bodyFont,
           }}
         >
           LinkedIn Content Engine
         </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-          }}
-        >
+        {isExpressive ? (
           <div
             style={{
-              width: 28,
-              height: 5,
+              padding: "4px 14px",
               backgroundColor: theme.accent,
-              borderRadius: 3,
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#FFFFFF",
+              fontFamily: theme.bodyFont,
             }}
-          />
-          <div
-            style={{
-              width: 14,
-              height: 5,
-              backgroundColor: theme.muted,
-              borderRadius: 3,
-              opacity: 0.4,
-            }}
-          />
-          <div
-            style={{
-              width: 14,
-              height: 5,
-              backgroundColor: theme.muted,
-              borderRadius: 3,
-              opacity: 0.4,
-            }}
-          />
-        </div>
+          >
+            Follow for more
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ width: 28, height: 5, backgroundColor: theme.accent, borderRadius: 3 }} />
+            <div style={{ width: 14, height: 5, backgroundColor: theme.muted, borderRadius: 3, opacity: 0.4 }} />
+            <div style={{ width: 14, height: 5, backgroundColor: theme.muted, borderRadius: 3, opacity: 0.4 }} />
+          </div>
+        )}
       </div>
     </div>
   );
