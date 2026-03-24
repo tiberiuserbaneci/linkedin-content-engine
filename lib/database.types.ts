@@ -81,6 +81,18 @@ export interface PatternMatch {
   label: string;
 }
 
+export type AssetFormat = "infographic" | "cheatsheet" | "carousel" | "post-cover";
+export type AssetTheme = "light" | "dark" | "handwriting";
+
+export interface ContentAsset {
+  id: string;
+  format: AssetFormat;
+  theme: AssetTheme;
+  title: string;
+  content_json: Record<string, unknown>;
+  created_at: string;
+}
+
 // Supabase Database type helper
 export interface Database {
   public: {
@@ -104,6 +116,11 @@ export interface Database {
         Row: ContentIdea;
         Insert: Omit<ContentIdea, "id" | "created_at">;
         Update: Partial<Omit<ContentIdea, "id" | "created_at">>;
+      };
+      content_assets: {
+        Row: ContentAsset;
+        Insert: Omit<ContentAsset, "id" | "created_at">;
+        Update: Partial<Omit<ContentAsset, "id" | "created_at">>;
       };
     };
   };

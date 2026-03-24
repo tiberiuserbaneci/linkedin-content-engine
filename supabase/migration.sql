@@ -91,3 +91,16 @@ create policy "Allow all for service role" on profiles for all using (true) with
 create policy "Allow all for service role" on posts for all using (true) with check (true);
 create policy "Allow all for service role" on content_analyses for all using (true) with check (true);
 create policy "Allow all for service role" on content_ideas for all using (true) with check (true);
+
+-- Content assets table (Studio)
+create table if not exists content_assets (
+  id uuid primary key default uuid_generate_v4(),
+  format text not null check (format in ('infographic', 'cheatsheet', 'carousel', 'post-cover')),
+  theme text not null check (theme in ('light', 'dark', 'handwriting')),
+  title text not null,
+  content_json jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_content_assets_format on content_assets(format);
+alter table content_assets enable row level security;
+create policy "Allow all for service role" on content_assets for all using (true) with check (true);
