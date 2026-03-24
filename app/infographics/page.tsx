@@ -18,7 +18,7 @@ const TEMPLATES: TemplateEntry[] = [
     id: "founder-ai-stack-2026",
     title: "Founder AI Stack 2026",
     description:
-      "7 automations replacing full-time hires. 6-section grid with R.E.P.L.A.C.E. philosophy, lead gen flowchart, competitor intelligence, deal pipeline, metrics table & health monitor.",
+      "7 AI Automations. 1 Founder. 6-section grid with R.E.P.L.A.C.E. philosophy, lead gen flowchart, competitor intelligence, deal pipeline, metrics table & health monitor.",
     href: "/infographic",
     Component: InfographicTemplate,
   },
@@ -31,12 +31,46 @@ async function exportToPng(element: HTMLElement, filename: string) {
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#F8F6F1",
+    width: 1080,
+    height: 1350,
+    windowWidth: 1080,
+    windowHeight: 1350,
   });
   const link = document.createElement("a");
   link.download = `${filename}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
+}
+
+/* ── Renders template offscreen at full size and exports ── */
+
+async function exportFullSize(
+  TemplateComp: React.ComponentType,
+  filename: string
+) {
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-9999px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "1080px";
+  wrapper.style.height = "1350px";
+  wrapper.style.overflow = "hidden";
+  document.body.appendChild(wrapper);
+
+  const { createRoot } = await import("react-dom/client");
+  const root = createRoot(wrapper);
+  root.render(<TemplateComp />);
+
+  // Wait for render
+  await new Promise((r) => setTimeout(r, 600));
+
+  try {
+    await exportToPng(wrapper, filename);
+  } finally {
+    root.unmount();
+    document.body.removeChild(wrapper);
+  }
 }
 
 /* ── Preview Modal ──────────────────────────────────── */
@@ -52,14 +86,13 @@ function PreviewModal({
   const [exporting, setExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
-    if (!contentRef.current) return;
     setExporting(true);
     try {
-      await exportToPng(contentRef.current, template.id);
+      await exportFullSize(template.Component, template.id);
     } finally {
       setExporting(false);
     }
-  }, [template.id]);
+  }, [template]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm">
@@ -69,6 +102,7 @@ function PreviewModal({
           Preview: {template.title}
         </h2>
         <div className="flex items-center gap-3">
+          <span className="text-[10px] text-[#666]">1080 × 1350 px</span>
           <a
             href={template.href}
             target="_blank"
@@ -80,7 +114,7 @@ function PreviewModal({
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#DA4E24] text-white hover:bg-[#DA4E24]/90 transition-colors disabled:opacity-50"
+            className="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#C94A22] text-white hover:bg-[#C94A22]/90 transition-colors disabled:opacity-50"
           >
             {exporting ? "Exporting…" : "Export PNG"}
           </button>
@@ -95,7 +129,11 @@ function PreviewModal({
 
       {/* Scrollable preview area */}
       <div className="flex-1 overflow-y-auto p-6 flex justify-center">
-        <div ref={contentRef} className="max-w-[820px] w-full">
+        <div
+          ref={contentRef}
+          className="shadow-2xl"
+          style={{ width: 1080, minHeight: 1350 }}
+        >
           <template.Component />
         </div>
       </div>
@@ -112,36 +150,16 @@ function TemplateCard({
   template: TemplateEntry;
   onPreview: () => void;
 }) {
-  const thumbRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
 
   const handleExport = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!thumbRef.current) return;
-      // Export from a hidden full-size render instead of the scaled thumbnail
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "fixed";
-      wrapper.style.left = "-9999px";
-      wrapper.style.top = "0";
-      wrapper.style.width = "820px";
-      document.body.appendChild(wrapper);
-
-      // Dynamically render for export
-      const { createRoot } = await import("react-dom/client");
-      const root = createRoot(wrapper);
-      root.render(<template.Component />);
-
-      // Wait for render
-      await new Promise((r) => setTimeout(r, 500));
-
       setExporting(true);
       try {
-        await exportToPng(wrapper, template.id);
+        await exportFullSize(template.Component, template.id);
       } finally {
         setExporting(false);
-        root.unmount();
-        document.body.removeChild(wrapper);
       }
     },
     [template]
@@ -152,15 +170,15 @@ function TemplateCard({
       {/* Thumbnail preview – scaled-down live render */}
       <div
         className="relative overflow-hidden cursor-pointer"
-        style={{ height: 320 }}
+        style={{ height: 340 }}
         onClick={onPreview}
       >
         <div
-          ref={thumbRef}
           className="origin-top-left pointer-events-none"
           style={{
-            transform: "scale(0.42)",
-            width: "820px",
+            transform: "scale(0.28)",
+            width: "1080px",
+            height: "1350px",
             transformOrigin: "top left",
           }}
         >
@@ -201,7 +219,7 @@ function TemplateCard({
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="flex-1 px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#DA4E24] text-white hover:bg-[#DA4E24]/90 transition-colors disabled:opacity-50 text-center"
+            className="flex-1 px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#C94A22] text-white hover:bg-[#C94A22]/90 transition-colors disabled:opacity-50 text-center"
           >
             {exporting ? "…" : "Export PNG"}
           </button>
@@ -240,7 +258,7 @@ export default function InfographicsPage() {
           ))}
 
           {/* Placeholder for future templates */}
-          <div className="rounded-xl border border-dashed border-[#333] bg-[#0A0A0A] flex items-center justify-center min-h-[320px]">
+          <div className="rounded-xl border border-dashed border-[#333] bg-[#0A0A0A] flex items-center justify-center min-h-[340px]">
             <div className="text-center p-4">
               <div className="text-2xl text-[#333] mb-2">+</div>
               <p className="text-[12px] text-[#444]">More templates coming soon</p>
