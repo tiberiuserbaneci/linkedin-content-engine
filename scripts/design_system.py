@@ -250,14 +250,16 @@ def validate_forbidden_styles(html_content: str) -> dict:
     """
     Check for forbidden CSS patterns: gradients, shadows, etc.
     """
+    import re
+
     forbidden_patterns = {
         'gradients': [r'gradient\s*\(', r'linear-gradient', r'radial-gradient'],
         'shadows': [r'box-shadow', r'text-shadow'],
         'emoji': [r'[😀-🙏🌀-🗿]'],
     }
-    
+
     violations = {}
-    
+
     for pattern_type, patterns in forbidden_patterns.items():
         for pattern in patterns:
             if re.search(pattern, html_content, re.IGNORECASE):
