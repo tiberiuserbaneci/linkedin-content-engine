@@ -32,6 +32,7 @@ def main():
     tests = [
         ("test_design_system.py", "DESIGN SYSTEM TESTS (18 tests)"),
         ("test_scoring.py", "360BREW SCORING TESTS (12 tests)"),
+        ("test_db_sync.py", "SUPABASE DATABASE TESTS (14 tests)"),
     ]
 
     results = {}
@@ -61,6 +62,7 @@ def main():
         print("  ✓ 360BREW Scoring: Virality, Save-worthy, Visual, System Thinking")
         print("  ✓ Color validation, forbidden styles, typography checks")
         print("  ✓ GO/REBUILD recommendations for content quality")
+        print("  ✓ Supabase Sync: Variant save/fetch, batch operations, status updates")
         return 0
     else:
         print(f"\n✗ {total - passed} test suite(s) FAILED")
