@@ -11,6 +11,25 @@ from datetime import datetime
 import os
 from pathlib import Path
 
+
+def _load_env():
+    """Load .env.local from repo root if present (no external deps needed)."""
+    for candidate in [
+        Path(__file__).parent.parent / '.env.local',
+        Path(__file__).parent / '.env.local',
+    ]:
+        if candidate.exists():
+            with open(candidate) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        k, _, v = line.partition('=')
+                        os.environ.setdefault(k.strip(), v.strip().strip('"\''))
+            break
+
+
+_load_env()
+
 from export_playwright import PlaywrightExporter
 from scoring import BrewAlgorithm, format_score_report
 from db_sync import SupabaseSync, BatchSync
@@ -129,42 +148,54 @@ Remember:
 """
         
         print(f"\n📐 Generating Variant {variant_num}: {design_direction['name']}...")
-        
-        response = client.messages.create(
-            model="claude-opus-4-6",
-            max_tokens=4000,
-            system=self.get_system_prompt(),
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_prompt
-                }
-            ]
-        )
-        
+
+        try:
+            response = client.messages.create(
+                model="claude-opus-4-6",
+                max_tokens=4000,
+                system=self.get_system_prompt(),
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+        except Exception as api_err:
+            err_type = type(api_err).__name__
+            if 'AuthenticationError' in err_type or '401' in str(api_err):
+                print(f"   ✗ Variant {variant_num}: API key invalid — set ANTHROPIC_API_KEY in .env.local")
+            else:
+                print(f"   ✗ Variant {variant_num}: API error — {api_err}")
+            return {
+                'variant_num': variant_num,
+                'design_direction': design_direction['name'],
+                'template': design_direction['template'],
+                'html': '',
+                'export': {'success': False, 'error': str(api_err), 'error_type': err_type},
+                'error': str(api_err),
+                'generated_at': datetime.now().isoformat()
+            }
+
         html = response.content[0].text
-        
+
         # Clean HTML if wrapped in markdown
         if html.startswith('```'):
             html = html.split('```')[1]
             if html.startswith('html'):
                 html = html[4:]
             html = html.strip()
-        
+
         print(f"   ✓ HTML generated ({len(html)} chars)")
-        
+
         # Export to PNG
         export_result = await self.exporter.capture_html(
             html,
             filename=f"variant-{variant_num}",
             hide_export_bar=True
         )
-        
+
         if export_result.get('success'):
-            print(f"   ✓ PNG exported: {export_result['png_filename']} ({export_result['file_size_kb']}KB)")
+            renderer = export_result.get('renderer', 'playwright')
+            print(f"   ✓ PNG exported: {export_result['png_filename']} ({export_result['file_size_kb']}KB) [{renderer}]")
         else:
             print(f"   ✗ PNG export failed: {export_result.get('error')}")
-        
+
         return {
             'variant_num': variant_num,
             'design_direction': design_direction['name'],
@@ -208,8 +239,19 @@ Remember:
         for i, task in enumerate(asyncio.as_completed(tasks)):
             if on_progress:
                 on_progress(i + 1, num_variants)
-            
-            result = await task
+            try:
+                result = await task
+            except Exception as e:
+                print(f"   ✗ Variant task failed: {e}")
+                result = {
+                    'variant_num': i + 1,
+                    'design_direction': 'unknown',
+                    'template': 'unknown',
+                    'html': '',
+                    'export': {'success': False, 'error': str(e)},
+                    'error': str(e),
+                    'generated_at': datetime.now().isoformat()
+                }
             variants.append(result)
         
         # Sort by variant num

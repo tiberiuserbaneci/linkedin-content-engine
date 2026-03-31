@@ -118,10 +118,69 @@ class PlaywrightExporter:
                 }
 
         except Exception as e:
+            # Playwright unavailable — fall back to wkhtmltoimage
+            return await self._capture_wkhtmltoimage(html_content, filename)
+
+    async def _capture_wkhtmltoimage(
+        self,
+        html_content: str,
+        filename: str = "artifact"
+    ) -> dict:
+        """
+        Fallback renderer using wkhtmltoimage (no browser install required).
+        Produces 1080×1350px PNG at 144 DPI via subprocess.
+        """
+        import subprocess, tempfile
+        png_filename = f"{filename}-1080x1350.png"
+        png_path     = os.path.join(self.output_dir, png_filename)
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.html', mode='w',
+                                             delete=False, encoding='utf-8') as tmp:
+                tmp.write(html_content)
+                tmp_path = tmp.name
+
+            result = subprocess.run(
+                [
+                    'xvfb-run', 'wkhtmltoimage',
+                    '--width',        str(self.dimensions['width_px']),
+                    '--height',       str(self.dimensions['height_px']),
+                    '--dpi',          str(self.dimensions['dpi']),
+                    '--disable-smart-width',
+                    '--zoom',         '1',
+                    tmp_path, png_path
+                ],
+                capture_output=True, text=True, timeout=60
+            )
+            os.unlink(tmp_path)
+
+            if result.returncode != 0 or not os.path.exists(png_path):
+                return {
+                    'success': False,
+                    'error': result.stderr.strip() or 'wkhtmltoimage produced no output',
+                    'error_type': 'WkhtmlError'
+                }
+
+            file_size = os.path.getsize(png_path)
+            return {
+                'success': True,
+                'png_path': png_path,
+                'png_filename': png_filename,
+                'file_size': file_size,
+                'file_size_kb': round(file_size / 1024, 2),
+                'dimensions': {
+                    'width': self.dimensions['width_px'],
+                    'height': self.dimensions['height_px']
+                },
+                'dpi': self.dimensions['dpi'],
+                'scale_factor': 1,
+                'renderer': 'wkhtmltoimage',
+                'captured_at': datetime.now().isoformat()
+            }
+        except Exception as ex:
             return {
                 'success': False,
-                'error': str(e),
-                'error_type': type(e).__name__
+                'error': str(ex),
+                'error_type': type(ex).__name__
             }
     
     async def batch_export(
