@@ -34,6 +34,7 @@ def main():
         ("test_scoring.py",          "360BREW SCORING TESTS (12 tests)"),
         ("test_db_sync.py",          "SUPABASE DATABASE TESTS (14 tests)"),
         ("test_batch_generator.py",  "BATCH GENERATOR TESTS (26 tests)"),
+        ("test_outputs.py",          "OUTPUT PIPELINE TESTS (23 tests)"),
     ]
 
     results = {}
@@ -65,6 +66,7 @@ def main():
         print("  ✓ GO/REBUILD recommendations for content quality")
         print("  ✓ Supabase Sync: Variant save/fetch, batch operations, status updates")
         print("  ✓ Batch Generator: Design directions, scorer, pipeline, DB integration")
+        print("  ✓ Output Pipeline: Directory, PNG validity, naming, size formatting")
         return 0
     else:
         print(f"\n✗ {total - passed} test suite(s) FAILED")
