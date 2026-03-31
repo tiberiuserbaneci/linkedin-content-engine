@@ -47,75 +47,76 @@ class PlaywrightExporter:
             print("Installing Playwright...")
             os.system("pip install playwright --break-system-packages")
             from playwright.async_api import async_playwright
-        
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True,
-                args=['--no-sandbox']
-            )
-            
-            page = await browser.new_page(
-                viewport={
-                    'width': self.dimensions['width_px'],
-                    'height': self.dimensions['height_px']
-                },
-                device_scale_factor=self.dimensions['scale_factor']
-            )
-            
-            # Set content
-            await page.set_content(html_content, wait_until='networkidle')
-            
-            # Hide export bar if present
-            if hide_export_bar:
-                try:
-                    await page.locator('#export-bar').evaluate('el => el.style.display = "none"')
-                except:
-                    pass  # Export bar not present, continue
-            
-            # Capture screenshot (2160×2700 at 2x scale)
-            screenshot = await page.screenshot(full_page=True, type='png')
-            
-            await browser.close()
-            
-            # Downsample via PIL LANCZOS
-            img = Image.open(io.BytesIO(screenshot))
-            
-            # Current: 2160×2700 (2x scale)
-            # Target: 1080×1350 (1x at 144dpi)
-            img_downsampled = img.resize(
-                (self.dimensions['width_px'], self.dimensions['height_px']),
-                Image.Resampling.LANCZOS
-            )
-            
-            # Save @ 144 DPI
-            png_filename = f"{filename}-1080x1350.png"
-            png_path = os.path.join(self.output_dir, png_filename)
-            
-            img_downsampled.save(
-                png_path,
-                'PNG',
-                dpi=(self.dimensions['dpi'], self.dimensions['dpi']),
-                optimize=True
-            )
-            
-            # Get file stats
-            file_size = os.path.getsize(png_path)
-            
-            return {
-                'success': True,
-                'png_path': png_path,
-                'png_filename': png_filename,
-                'file_size': file_size,
-                'file_size_kb': round(file_size / 1024, 2),
-                'dimensions': {
-                    'width': self.dimensions['width_px'],
-                    'height': self.dimensions['height_px']
-                },
-                'dpi': self.dimensions['dpi'],
-                'scale_factor': self.dimensions['scale_factor'],
-                'captured_at': datetime.now().isoformat()
-            }
-        
+
+        try:
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox']
+                )
+
+                page = await browser.new_page(
+                    viewport={
+                        'width': self.dimensions['width_px'],
+                        'height': self.dimensions['height_px']
+                    },
+                    device_scale_factor=self.dimensions['scale_factor']
+                )
+
+                # Set content
+                await page.set_content(html_content, wait_until='networkidle')
+
+                # Hide export bar if present
+                if hide_export_bar:
+                    try:
+                        await page.locator('#export-bar').evaluate('el => el.style.display = "none"')
+                    except:
+                        pass  # Export bar not present, continue
+
+                # Capture screenshot (2160×2700 at 2x scale)
+                screenshot = await page.screenshot(full_page=True, type='png')
+
+                await browser.close()
+
+                # Downsample via PIL LANCZOS
+                img = Image.open(io.BytesIO(screenshot))
+
+                # Current: 2160×2700 (2x scale)
+                # Target: 1080×1350 (1x at 144dpi)
+                img_downsampled = img.resize(
+                    (self.dimensions['width_px'], self.dimensions['height_px']),
+                    Image.Resampling.LANCZOS
+                )
+
+                # Save @ 144 DPI
+                png_filename = f"{filename}-1080x1350.png"
+                png_path = os.path.join(self.output_dir, png_filename)
+
+                img_downsampled.save(
+                    png_path,
+                    'PNG',
+                    dpi=(self.dimensions['dpi'], self.dimensions['dpi']),
+                    optimize=True
+                )
+
+                # Get file stats
+                file_size = os.path.getsize(png_path)
+
+                return {
+                    'success': True,
+                    'png_path': png_path,
+                    'png_filename': png_filename,
+                    'file_size': file_size,
+                    'file_size_kb': round(file_size / 1024, 2),
+                    'dimensions': {
+                        'width': self.dimensions['width_px'],
+                        'height': self.dimensions['height_px']
+                    },
+                    'dpi': self.dimensions['dpi'],
+                    'scale_factor': self.dimensions['scale_factor'],
+                    'captured_at': datetime.now().isoformat()
+                }
+
         except Exception as e:
             return {
                 'success': False,
