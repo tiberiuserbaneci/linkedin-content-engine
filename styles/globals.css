@@ -4,146 +4,125 @@
 
 @layer base {
   :root {
-    --color-primary-50: #f0f4ff;
-    --color-primary-100: #e0e9ff;
-    --color-primary-200: #c2d3ff;
-    --color-primary-300: #a3bdff;
-    --color-primary-400: #85a7ff;
-    --color-primary-500: #6691ff;
-    --color-primary-600: #4d7be6;
-    --color-primary-700: #3565cc;
-    --color-primary-800: #1d4fb3;
-    --color-primary-900: #0b399a;
+    /* Slate (Dark Gray) */
+    --color-slate-dark: #191919;
+    --color-slate-medium: #262625;
+    --color-slate-light: #40403E;
 
-    --color-secondary-50: #fff7ed;
-    --color-secondary-100: #ffe7d5;
-    --color-secondary-200: #ffcfaa;
-    --color-secondary-300: #ffb780;
-    --color-secondary-400: #ff9f55;
-    --color-secondary-500: #ff872b;
-    --color-secondary-600: #e6722a;
-    --color-secondary-700: #cc5d28;
-    --color-secondary-800: #b34827;
-    --color-secondary-900: #992e1e;
+    /* Cloud (Medium Gray) */
+    --color-cloud-dark: #666663;
+    --color-cloud-medium: #91918D;
+    --color-cloud-light: #BFBFBA;
 
-    --color-accent-50: #f3f0ff;
-    --color-accent-100: #e8e0ff;
-    --color-accent-200: #d1c2ff;
-    --color-accent-300: #baa3ff;
-    --color-accent-400: #a385ff;
-    --color-accent-500: #8c66ff;
-    --color-accent-600: #7c4de6;
-    --color-accent-700: #6c35cc;
-    --color-accent-800: #501db3;
-    --color-accent-900: #380b9a;
+    /* Ivory (Light/Off-white) */
+    --color-ivory-dark: #E5E4DF;
+    --color-ivory-medium: #F0FDEB;
+    --color-ivory-light: #FAFAF7;
 
-    --color-success-50: #f0fdf4;
-    --color-success-100: #dcfce7;
-    --color-success-200: #bbf7d0;
-    --color-success-300: #86efac;
-    --color-success-400: #4ade80;
-    --color-success-500: #22c55e;
-    --color-success-600: #16a34a;
-    --color-success-700: #15803d;
-    --color-success-800: #166534;
-    --color-success-900: #145231;
+    /* Accent Tones */
+    --color-accent-book-cloth: #CC785C;
+    --color-accent-kraft: #D4A27F;
+    --color-accent-manilla: #EBDBBC;
 
-    --color-warning-50: #fffbeb;
-    --color-warning-100: #fef3c7;
-    --color-warning-200: #fde68a;
-    --color-warning-300: #fcd34d;
-    --color-warning-400: #fbbf24;
-    --color-warning-500: #f59e0b;
-    --color-warning-600: #d97706;
-    --color-warning-700: #b45309;
-    --color-warning-800: #92400e;
-    --color-warning-900: #78350f;
+    /* Semantic Colors */
+    --color-semantic-focus: #2D8AF7;
+    --color-semantic-error: #EF343B;
 
-    --color-error-50: #fef2f2;
-    --color-error-100: #fee2e2;
-    --color-error-200: #fecaca;
-    --color-error-300: #fca5a5;
-    --color-error-400: #f87171;
-    --color-error-500: #ef4444;
-    --color-error-600: #dc2626;
-    --color-error-700: #b91c1c;
-    --color-error-800: #991b1b;
-    --color-error-900: #7f1d1d;
-
-    --color-neutral-0: #ffffff;
-    --color-neutral-50: #f9fafb;
-    --color-neutral-100: #f3f4f6;
-    --color-neutral-200: #e5e7eb;
-    --color-neutral-300: #d1d5db;
-    --color-neutral-400: #9ca3af;
-    --color-neutral-500: #6b7280;
-    --color-neutral-600: #4b5563;
-    --color-neutral-700: #374151;
-    --color-neutral-800: #1f2937;
-    --color-neutral-900: #111827;
-    --color-neutral-950: #030712;
+    /* Base Colors */
+    --color-base-black: #000000;
+    --color-base-white: #FFFFFF;
 
     /* Typography */
-    --font-primary: Inter, system-ui, -apple-system, sans-serif;
-    --font-mono: Menlo, Monaco, Courier New, monospace;
+    --font-primary: 'Anthropic Sans', -apple-system, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', Menlo, Monaco, Courier New, monospace;
+
+    /* Motion */
+    --motion-fast: 150ms;
+    --motion-base: 250ms;
+    --motion-slow: 350ms;
+  }
+
+  * {
+    @apply transition-colors duration-base;
+  }
+
+  html {
+    @apply scroll-smooth;
   }
 
   body {
-    @apply font-primary text-neutral-900;
-    background-color: var(--color-neutral-0);
+    @apply font-sans text-slate-light bg-ivory-light;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold;
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    body {
+      @apply bg-slate-dark text-ivory-light;
+    }
   }
 
+  /* Headings */
   h1 {
-    @apply text-4xl;
+    @apply text-4xl font-bold leading-tight;
   }
 
   h2 {
-    @apply text-3xl;
+    @apply text-3xl font-semibold leading-snug;
   }
 
   h3 {
-    @apply text-2xl;
+    @apply text-2xl font-semibold leading-snug;
   }
 
-  h4 {
-    @apply text-xl;
+  h4, h5, h6 {
+    @apply text-lg font-semibold;
   }
 
-  h5 {
-    @apply text-lg;
+  /* Links */
+  a {
+    @apply text-semantic-focus hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-semantic-focus rounded;
   }
 
-  h6 {
-    @apply text-base;
+  /* Code blocks */
+  code, pre {
+    @apply font-mono text-sm;
   }
 }
 
 @layer components {
-  .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors;
+  /* Button base styles */
+  .button {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-semantic-focus;
   }
 
-  .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700;
+  .button-primary {
+    @apply button bg-semantic-focus text-base-white hover:opacity-90;
   }
 
-  .btn-secondary {
-    @apply btn bg-secondary-600 text-white hover:bg-secondary-700;
+  .button-secondary {
+    @apply button bg-accent-book-cloth text-base-white hover:opacity-90;
   }
 
-  .btn-outline {
-    @apply btn border-2 border-neutral-300 text-neutral-900 hover:bg-neutral-100;
+  .button-ghost {
+    @apply button bg-transparent text-slate-light hover:bg-ivory-medium;
   }
 
-  .card {
-    @apply bg-white border border-neutral-200 rounded-lg shadow-sm;
+  /* Card surface */
+  .surface {
+    @apply rounded-lg border border-cloud-light bg-ivory-light shadow-sm;
   }
 
-  .input {
-    @apply w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  .surface-dark {
+    @apply rounded-lg border border-slate-medium bg-slate-light shadow-sm;
+  }
+
+  /* Input base */
+  .input-field {
+    @apply w-full px-3 py-2 rounded-md border border-cloud-light bg-ivory-light text-slate-light placeholder-cloud-medium focus:outline-none focus:ring-2 focus:ring-semantic-focus focus:border-transparent;
+  }
+
+  /* Focus ring utilities */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-semantic-focus;
   }
 }

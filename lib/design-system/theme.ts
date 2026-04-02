@@ -1,85 +1,100 @@
 import tokens from '../../design-tokens/tokens.json'
 
 /**
- * Design System Color Palette
+ * Anthropic Design System Theme
+ *
+ * Color palette based on material inspiration:
+ * - Slate, Cloud, Ivory: Neutral grays for surfaces and text
+ * - Book Cloth, Kraft, Manilla: Warm accent tones
+ * - Focus: Blue for interactive elements and focus states
+ * - Error: Red for error states and alerts
  */
-export const colors = tokens.colors as Record<string, Record<string, string>>
+
+export const colors = {
+  slate: tokens.colors.slate,
+  cloud: tokens.colors.cloud,
+  ivory: tokens.colors.ivory,
+  accent: tokens.colors.accent,
+  semantic: tokens.colors.semantic,
+  base: tokens.colors.base,
+} as const
 
 /**
- * Design System Typography
+ * Typography system
+ *
+ * Font families:
+ * - Anthropic Sans: Primary UI font
+ * - JetBrains Mono: Code and monospace text
+ *
+ * Sizes: XS, SM, MD, LG (minimal scale)
+ * Weights: Regular (400), Medium (500), Semibold (600), Bold (700)
  */
-export const typography = tokens.typography as {
-  fontFamily: Record<string, string>
-  fontSize: Record<string, string>
-  fontWeight: Record<string, number>
-  lineHeight: Record<string, number>
-  letterSpacing: Record<string, string>
-}
+export const typography = {
+  fontFamily: tokens.typography.fontFamily,
+  fontSize: tokens.typography.fontSize,
+  fontWeight: tokens.typography.fontWeight,
+  lineHeight: tokens.typography.lineHeight,
+  textStyles: tokens.typography.textStyles,
+} as const
 
 /**
- * Design System Spacing Scale
+ * Spacing scale (8px base unit)
  */
-export const spacing = tokens.spacing as Record<string, string>
+export const spacing = tokens.spacing as const
 
 /**
- * Design System Border Radius
+ * Border radius tokens
+ * XS → SM → MD → LG → XL → Full
  */
-export const borderRadius = tokens.borderRadius as Record<string, string>
+export const borderRadius = tokens.borderRadius as const
 
 /**
- * Design System Shadows
+ * Elevation shadows
  */
-export const shadows = tokens.shadows as Record<string, string>
+export const shadows = tokens.shadows as const
 
 /**
- * Design System Transitions
+ * Motion system
  */
-export const transitions = tokens.transitions as Record<string, string>
+export const motion = tokens.motion as const
 
 /**
- * Get color value by path (e.g., 'primary.500')
+ * Get color value by path
+ * @example getColor('slate.dark') → '#191919'
  */
 export function getColor(path: string): string {
   const [category, shade] = path.split('.')
-  return colors[category]?.[shade] || path
+  const col = colors[category as keyof typeof colors]
+  if (col && typeof col === 'object' && shade in col) {
+    return col[shade as keyof typeof col] as string
+  }
+  return path
 }
 
 /**
- * Utility type for color keys
+ * Utility types
  */
-export type ColorPath =
-  | `primary.${keyof typeof colors.primary}`
-  | `secondary.${keyof typeof colors.secondary}`
-  | `accent.${keyof typeof colors.accent}`
-  | `success.${keyof typeof colors.success}`
-  | `warning.${keyof typeof colors.warning}`
-  | `error.${keyof typeof colors.error}`
-  | `neutral.${keyof typeof colors.neutral}`
+export type SlateShade = keyof typeof colors.slate
+export type CloudShade = keyof typeof colors.cloud
+export type IvoryShade = keyof typeof colors.ivory
+export type AccentTone = keyof typeof colors.accent
+export type SemanticColor = keyof typeof colors.semantic
 
-/**
- * Utility type for typography keys
- */
+export type ColorPath =
+  | `slate.${SlateShade}`
+  | `cloud.${CloudShade}`
+  | `ivory.${IvoryShade}`
+  | `accent.${AccentTone}`
+  | `semantic.${SemanticColor}`
+  | `base.black`
+  | `base.white`
+
 export type FontSize = keyof typeof typography.fontSize
 export type FontWeight = keyof typeof typography.fontWeight
-export type LineHeight = keyof typeof typography.lineHeight
-export type LetterSpacing = keyof typeof typography.letterSpacing
+export type TextStyle = keyof typeof typography.textStyles
 
-/**
- * Utility type for spacing
- */
 export type Spacing = keyof typeof spacing
-
-/**
- * Utility type for border radius
- */
 export type BorderRadius = keyof typeof borderRadius
-
-/**
- * Utility type for shadows
- */
 export type Shadow = keyof typeof shadows
-
-/**
- * Utility type for transitions
- */
-export type Transition = keyof typeof transitions
+export type MotionDuration = keyof typeof motion.duration
+export type MotionEasing = keyof typeof motion.easing
