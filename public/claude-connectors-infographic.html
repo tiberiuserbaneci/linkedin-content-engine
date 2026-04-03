@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Interactive Connectors — LinkedIn Asset</title>
+<style>
+  /*
+   * Anthropic Design System
+   * Palette: Slate / Cloud / Ivory / Book Cloth / Focus / Error
+   * Typography: Anthropic Sans (system fallback) + JetBrains Mono
+   * Spacing: 8px grid
+  */
+  :root {
+    --slate-dark:    #191919;
+    --slate-medium:  #262625;
+    --slate-light:   #40403E;
+    --cloud-dark:    #666663;
+    --cloud-medium:  #91918D;
+    --cloud-light:   #BFBFBA;
+    --ivory-dark:    #E5E4DF;
+    --ivory-medium:  #F0F0EB;
+    --ivory-light:   #FAFAF7;
+    --book-cloth:    #CC785C;
+    --kraft:         #D4A27F;
+    --manilla:       #EBDBBC;
+    --focus:         #2D8AF7;
+    --error:         #EF343B;
+    --black:         #000000;
+    --white:         #FFFFFF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0D0D0D;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 24px;
+    font-family: -apple-system, 'Anthropic Sans', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── CANVAS: 1080 × 1350 LinkedIn portrait ── */
+  .canvas {
+    width: 1080px;
+    min-height: 1350px;
+    background: var(--slate-dark);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Responsive scale */
+  @media (max-width: 1140px) {
+    body { padding: 0; }
+    .canvas { transform-origin: top center; transform: scale(0.72); margin-bottom: -378px; }
+  }
+  @media (max-width: 820px) {
+    .canvas { transform: scale(0.48); margin-bottom: -702px; }
+  }
+  @media (max-width: 560px) {
+    .canvas { transform: scale(0.32); margin-bottom: -918px; }
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 1 — HOOK
+     Height target: ~340px
+  ────────────────────────────────────────── */
+  .zone-hook {
+    padding: 64px 80px 0;
+  }
+
+  .overline {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--book-cloth);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .overline::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--book-cloth);
+  }
+
+  .hook-headline {
+    font-size: 68px;
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.028em;
+    color: var(--ivory-light);
+    max-width: 780px;
+  }
+
+  .hook-headline .accent {
+    color: var(--book-cloth);
+  }
+
+  .hook-sub {
+    margin-top: 24px;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--cloud-medium);
+    line-height: 1.6;
+    max-width: 560px;
+  }
+
+  .hook-sub strong {
+    color: var(--cloud-light);
+    font-weight: 500;
+  }
+
+  .rule {
+    margin: 48px 80px 0;
+    height: 1px;
+    background: var(--slate-light);
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 2 — REFRAME
+     Height target: ~110px
+  ────────────────────────────────────────── */
+  .zone-reframe {
+    padding: 36px 80px 0;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cloud-dark);
+    margin-bottom: 14px;
+  }
+
+  .reframe-body {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--ivory-dark);
+    line-height: 1.55;
+    max-width: 860px;
+  }
+
+  .reframe-body strong {
+    color: var(--ivory-light);
+    font-weight: 600;
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 3 — UI MODES (inline vs fullscreen)
+     Height target: ~200px
+  ────────────────────────────────────────── */
+  .zone-modes {
+    padding: 32px 80px 0;
+    display: flex;
+    gap: 16px;
+  }
+
+  .mode-card {
+    flex: 1;
+    background: var(--slate-medium);
+    border: 1px solid var(--slate-light);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .mode-chrome {
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid var(--slate-light);
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .chrome-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .chrome-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--slate-light);
+  }
+
+  .chrome-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cloud-dark);
+    margin-left: auto;
+  }
+
+  .mode-content {
+    padding: 16px;
+  }
+
+  .mode-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--book-cloth);
+    margin-bottom: 6px;
+  }
+
+  .mode-description {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--cloud-medium);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  /* Mock UI — Inline Card */
+  .mock-ui {
+    background: var(--slate-dark);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 5px;
+    padding: 10px 12px;
+  }
+
+  .mock-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  .mock-row:last-child { margin-bottom: 0; }
+
+  .mock-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    background: var(--book-cloth);
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  .mock-bar {
+    height: 7px;
+    border-radius: 2px;
+    background: var(--slate-light);
+  }
+
+  .mock-pill {
+    height: 18px;
+    border-radius: 3px;
+    background: var(--focus);
+    opacity: 0.25;
+    flex-shrink: 0;
+  }
+
+  /* Mock UI — Fullscreen */
+  .mock-toolbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 9px;
+  }
+
+  .mock-btn {
+    height: 18px;
+    border-radius: 3px;
+    background: var(--slate-light);
+    opacity: 0.7;
+  }
+
+  .mock-table {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 0.8fr;
+    gap: 2px;
+  }
+
+  .mock-cell {
+    height: 12px;
+    border-radius: 1.5px;
+    background: var(--slate-light);
+    opacity: 0.5;
+  }
+
+  .mock-cell.th {
+    background: var(--cloud-dark);
+    opacity: 0.35;
+  }
+
+  .mock-cell.active {
+    background: var(--focus);
+    opacity: 0.2;
+  }
+
+  .rule-sm {
+    margin: 28px 80px 0;
+    height: 1px;
+    background: var(--slate-light);
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 4 — CONNECTOR ECOSYSTEM
+     Height target: ~96px
+  ────────────────────────────────────────── */
+  .zone-connectors {
+    padding: 28px 80px 0;
+  }
+
+  .connector-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chip {
+    padding: 5px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--slate-light);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--cloud-light);
+    letter-spacing: 0.01em;
+    background: transparent;
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 5 — ACTION VERBS
+     Height target: ~80px
+  ────────────────────────────────────────── */
+  .zone-actions {
+    padding: 24px 80px 0;
+  }
+
+  .verb-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  .verb {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ivory-dark);
+    padding: 5px 12px;
+    background: var(--slate-medium);
+    border: 1px solid var(--slate-light);
+    border-radius: 4px;
+    letter-spacing: 0.01em;
+  }
+
+  .rule-sm2 {
+    margin: 24px 80px 0;
+    height: 1px;
+    background: var(--slate-light);
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 6 — WHY THIS MATTERS
+     Height target: ~148px
+  ────────────────────────────────────────── */
+  .zone-why {
+    padding: 28px 80px 0;
+  }
+
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 40px;
+    margin-top: 14px;
+  }
+
+  .why-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .why-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--book-cloth);
+    margin-top: 7px;
+    flex-shrink: 0;
+  }
+
+  .why-copy {
+    font-size: 13.5px;
+    font-weight: 400;
+    color: var(--cloud-light);
+    line-height: 1.5;
+  }
+
+  .why-copy strong {
+    color: var(--ivory-dark);
+    font-weight: 600;
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 7 — FOUNDERS WRONG
+     Height target: ~164px
+  ────────────────────────────────────────── */
+  .zone-founders {
+    margin: 24px 80px 0;
+    background: var(--slate-medium);
+    border-left: 3px solid var(--book-cloth);
+    border-radius: 0 6px 6px 0;
+    padding: 24px 28px;
+  }
+
+  .founders-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--book-cloth);
+    margin-bottom: 12px;
+  }
+
+  .founders-wrong {
+    font-size: 13.5px;
+    font-weight: 400;
+    color: var(--cloud-medium);
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+
+  .founders-right {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ivory-dark);
+    line-height: 1.45;
+  }
+
+  .founders-right em {
+    font-style: normal;
+    color: var(--ivory-light);
+  }
+
+  /* ──────────────────────────────────────────
+     ZONE 8 — BOTTOM LINE QUOTE
+     Height target: ~200px
+  ────────────────────────────────────────── */
+  .zone-quote {
+    margin-top: auto;
+    border-top: 1px solid var(--slate-light);
+    padding: 32px 80px 56px;
+  }
+
+  .quote-body {
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--ivory-dark);
+    line-height: 1.6;
+    max-width: 820px;
+  }
+
+  .quote-body strong {
+    color: var(--ivory-light);
+    font-weight: 600;
+  }
+
+  .quote-meta {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .claude-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--book-cloth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+
+  .quote-source {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cloud-dark);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="canvas">
+
+  <!-- ── ZONE 1 · HOOK ───────────────────── -->
+  <div class="zone-hook">
+    <div class="overline">Claude Interactive Connectors &middot; 2025</div>
+    <h1 class="hook-headline">
+      Most teams still<br>
+      think AI should<br>
+      <span class="accent">respond.</span>
+    </h1>
+    <p class="hook-sub">
+      Claude is starting to <strong>act through interfaces.</strong><br>
+      This changes the operating model — not just the prompt.
+    </p>
+  </div>
+  <div class="rule"></div>
+
+  <!-- ── ZONE 2 · REFRAME ───────────────── -->
+  <div class="zone-reframe">
+    <div class="eyebrow">What actually changed</div>
+    <p class="reframe-body">
+      Interactive connectors turn Claude from a text-only assistant into a system
+      that can <strong>open live application surfaces directly inside the conversation.</strong>
+      Not a link. Not a screenshot. A working interface.
+    </p>
+  </div>
+
+  <!-- ── ZONE 3 · UI MODES ──────────────── -->
+  <div class="zone-modes">
+
+    <div class="mode-card">
+      <div class="mode-chrome">
+        <div class="chrome-dots">
+          <div class="chrome-dot"></div>
+          <div class="chrome-dot"></div>
+          <div class="chrome-dot"></div>
+        </div>
+        <span class="chrome-label">Mode 01</span>
+      </div>
+      <div class="mode-content">
+        <div class="mode-tag">Inline Card</div>
+        <div class="mode-description">
+          Compact action surfaces and live data summaries — rendered inline, inside the thread.
+        </div>
+        <div class="mock-ui">
+          <div class="mock-row">
+            <div class="mock-icon"></div>
+            <div class="mock-bar" style="width:52%;"></div>
+            <div class="mock-pill" style="width:44px;"></div>
+          </div>
+          <div class="mock-row">
+            <div class="mock-bar" style="width:38%;"></div>
+            <div class="mock-bar" style="width:28%;"></div>
+          </div>
+          <div class="mock-row">
+            <div class="mock-bar" style="width:60%;"></div>
+            <div class="mock-pill" style="width:36px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-card">
+      <div class="mode-chrome">
+        <div class="chrome-dots">
+          <div class="chrome-dot"></div>
+          <div class="chrome-dot"></div>
+          <div class="chrome-dot"></div>
+        </div>
+        <span class="chrome-label">Mode 02</span>
+      </div>
+      <div class="mode-content">
+        <div class="mode-tag">Fullscreen View</div>
+        <div class="mode-description">
+          Deep interaction with full application context — filter, sort, drill in, and execute.
+        </div>
+        <div class="mock-ui">
+          <div class="mock-toolbar">
+            <div class="mock-btn" style="width:56px;"></div>
+            <div class="mock-btn" style="width:44px;"></div>
+            <div class="mock-btn" style="width:44px;"></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-cell th"></div>
+            <div class="mock-cell th"></div>
+            <div class="mock-cell th"></div>
+            <div class="mock-cell th"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell active"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell active"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell"></div>
+            <div class="mock-cell active"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="rule-sm"></div>
+
+  <!-- ── ZONE 4 · CONNECTORS ────────────── -->
+  <div class="zone-connectors">
+    <div class="eyebrow">Live today</div>
+    <div class="connector-chips">
+      <div class="chip">Amplitude</div>
+      <div class="chip">Asana</div>
+      <div class="chip">Box</div>
+      <div class="chip">Canva</div>
+      <div class="chip">Clay</div>
+      <div class="chip">Figma</div>
+      <div class="chip">Hex</div>
+      <div class="chip">Slack</div>
+    </div>
+  </div>
+
+  <!-- ── ZONE 5 · ACTIONS ───────────────── -->
+  <div class="zone-actions">
+    <div class="eyebrow">What users can do inside the connector</div>
+    <div class="verb-grid">
+      <span class="verb">filter</span>
+      <span class="verb">sort</span>
+      <span class="verb">drill&nbsp;in</span>
+      <span class="verb">toggle</span>
+      <span class="verb">confirm</span>
+      <span class="verb">save</span>
+      <span class="verb">send</span>
+      <span class="verb">update</span>
+    </div>
+  </div>
+  <div class="rule-sm2"></div>
+
+  <!-- ── ZONE 6 · WHY THIS MATTERS ─────── -->
+  <div class="zone-why">
+    <div class="eyebrow">Why this changes the operating model</div>
+    <div class="why-grid">
+      <div class="why-item">
+        <div class="why-dot"></div>
+        <div class="why-copy"><strong>No tab switches.</strong> Everything lives inside the conversation.</div>
+      </div>
+      <div class="why-item">
+        <div class="why-dot"></div>
+        <div class="why-copy"><strong>No copy-paste.</strong> Actions execute in place.</div>
+      </div>
+      <div class="why-item">
+        <div class="why-dot"></div>
+        <div class="why-copy"><strong>Tighter loop.</strong> Context, interface, and action — in sequence.</div>
+      </div>
+      <div class="why-item">
+        <div class="why-dot"></div>
+        <div class="why-copy"><strong>Auditable by design.</strong> Sandboxed iframes. Strict CSP. JSON-RPC.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ZONE 7 · FOUNDERS WRONG ───────── -->
+  <div class="zone-founders">
+    <div class="founders-tag">What most founders still get wrong</div>
+    <div class="founders-wrong">
+      They're still evaluating AI by model quality. The better question is not<br>
+      "Which model writes best?" It is:
+    </div>
+    <div class="founders-right">
+      <em>"Which system closes the loop<br>
+      between context, interface, and action?"</em>
+    </div>
+  </div>
+
+  <!-- ── ZONE 8 · BOTTOM LINE ───────────── -->
+  <div class="zone-quote">
+    <p class="quote-body">
+      "The real AI shift is not better prompts.<br>
+      <strong>It is interface-backed execution.</strong>"
+    </p>
+    <div class="quote-meta">
+      <div class="claude-mark">⊕</div>
+      <span class="quote-source">Claude &middot; Anthropic &middot; 2025</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
