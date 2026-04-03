@@ -40,23 +40,23 @@ export const typography = {
 /**
  * Spacing scale (8px base unit)
  */
-export const spacing = tokens.spacing as const
+export const spacing = tokens.spacing
 
 /**
  * Border radius tokens
  * XS → SM → MD → LG → XL → Full
  */
-export const borderRadius = tokens.borderRadius as const
+export const borderRadius = tokens.borderRadius
 
 /**
  * Elevation shadows
  */
-export const shadows = tokens.shadows as const
+export const shadows = tokens.shadows
 
 /**
  * Motion system
  */
-export const motion = tokens.motion as const
+export const motion = tokens.motion
 
 /**
  * Get color value by path
