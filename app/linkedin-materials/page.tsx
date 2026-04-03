@@ -426,7 +426,7 @@ export default function LinkedInMaterials() {
                 >
                   {template.description}
                 </p>
-                <div style={{ fontSize: '12px', color: colors.cloud.medium' }}>
+                <div style={{ fontSize: '12px', color: colors.cloud.medium }}>
                   <div style={{ marginBottom: '4px' }}>
                     <strong>Format:</strong> {template.format}
                   </div>
