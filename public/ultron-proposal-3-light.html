@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultron Proposal 3: Scaling Without Context Loss</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5ECE3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 1080px;
+            height: 1350px;
+            background: #F5ECE3;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .zone {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px 60px;
+            border-bottom: 1px solid rgba(25, 25, 25, 0.1);
+        }
+
+        .zone.hook {
+            background: #F5ECE3;
+            padding-top: 60px;
+            padding-bottom: 40px;
+            border-bottom: 3px solid #CC785C;
+        }
+
+        .zone.body {
+            padding: 40px 60px;
+        }
+
+        .zone.footer {
+            background: #191919;
+            color: #F5F5F0;
+            padding: 50px 60px;
+            border: none;
+            margin-top: auto;
+        }
+
+        .overline {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #CC785C;
+            margin-bottom: 16px;
+        }
+
+        .headline {
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #191919;
+            margin-bottom: 20px;
+        }
+
+        .subheadline {
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #666663;
+            max-width: 800px;
+        }
+
+        .body-text {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.6;
+            color: #191919;
+            margin-bottom: 20px;
+        }
+
+        .body-text strong {
+            font-weight: 600;
+            color: #191919;
+        }
+
+        .scaling-phase {
+            background: #EBDBBC;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 4px solid #CC785C;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .phase-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #191919;
+            margin-bottom: 10px;
+        }
+
+        .phase-content {
+            font-size: 14px;
+            color: #191919;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            background: #EBDBBC;
+            padding: 30px;
+            border-left: 4px solid #CC785C;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .highlight-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #191919;
+            line-height: 1.6;
+        }
+
+        .solution-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .solution-item {
+            background: #EBDBBC;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #CC785C;
+        }
+
+        .solution-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #191919;
+            margin-bottom: 10px;
+        }
+
+        .solution-desc {
+            font-size: 13px;
+            color: #666663;
+            line-height: 1.5;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .footer-left {
+            font-size: 16px;
+            font-weight: 500;
+            color: #F5F5F0;
+            flex: 1;
+        }
+
+        .footer-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .footer-button {
+            background: #CC785C;
+            color: #F5F5F0;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .score-badge {
+            background: #CC785C;
+            color: #F5F5F0;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .score-large {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                width: 90vw;
+                height: auto;
+                aspect-ratio: 1080 / 1350;
+            }
+
+            .zone {
+                padding: 30px 40px;
+            }
+
+            .headline {
+                font-size: 36px;
+            }
+
+            .subheadline {
+                font-size: 14px;
+            }
+
+            .body-text {
+                font-size: 13px;
+            }
+
+            .solution-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ZONE 1: HOOK -->
+        <div class="zone hook">
+            <div class="overline">Ultron Proposal 3</div>
+            <div class="headline">When context loss kills scaling</div>
+            <div class="subheadline">When you're scaling from 3 to 10 people, context loss is inevitable. Here's the fix.</div>
+        </div>
+
+        <!-- ZONE 2: AT 3 PEOPLE -->
+        <div class="zone body">
+            <div class="scaling-phase">
+                <div class="phase-title">At 3 people: Everything is known</div>
+                <div class="phase-content">Everyone knows everything. You talk. Things happen. Context is in the air.</div>
+            </div>
+        </div>
+
+        <!-- ZONE 3: AT 7 PEOPLE -->
+        <div class="zone body">
+            <div class="scaling-phase">
+                <div class="phase-title">At 7 people: Context starts slipping</div>
+                <div class="phase-content">Who knows the exact customer pain we're solving? What's our north star metric? Why did we say no to that feature? What's our playbook?</div>
+            </div>
+            <div class="body-text" style="margin-top: 20px;"><strong>Context starts dying.</strong></div>
+        </div>
+
+        <!-- ZONE 4: AT 10 PEOPLE -->
+        <div class="zone body">
+            <div class="scaling-phase">
+                <div class="phase-title">At 10 people: Context is completely gone</div>
+                <div class="phase-content">New hire doesn't know founding decision logic. Team doesn't remember tech stack choice. Customer success doesn't understand positioning nuance. Sales doesn't know financial constraints.</div>
+            </div>
+            <div class="highlight">
+                <div class="highlight-text">Everyone's working from different versions of the truth.</div>
+            </div>
+        </div>
+
+        <!-- ZONE 5: THE REAL PROBLEM -->
+        <div class="zone body">
+            <div class="body-text" style="font-size: 18px; color: #CC785C; font-weight: 700; margin-bottom: 20px;">That's when scaling breaks.</div>
+            <div class="body-text"><strong>Not growth. Not market fit.</strong></div>
+            <div class="body-text" style="font-size: 18px; font-weight: 600; color: #191919;">Context loss breaks scaling.</div>
+        </div>
+
+        <!-- ZONE 6: THE SOLUTION -->
+        <div class="zone body">
+            <div class="body-text"><strong>Ultron solves this with one principle:</strong></div>
+            <div class="body-text" style="font-size: 18px; color: #CC785C; font-weight: 700;">Context is infrastructure.</div>
+            <div class="body-text" style="margin-top: 20px;">Not just your knowledge. Not in your head. Your business rules stored, documented, accessible everywhere.</div>
+        </div>
+
+        <!-- ZONE 7: OUTCOMES AT SCALE -->
+        <div class="zone body">
+            <div class="body-text"><strong>New hire onboards in hours instead of weeks.</strong></div>
+            <div class="body-text">Sales uses your positioning framework instead of improvising.</div>
+            <div class="body-text">Operations runs from your playbook instead of guessing.</div>
+            <div class="body-text">Customer success answers questions aligned with your strategy.</div>
+            <div class="body-text" style="margin-top: 20px; font-size: 18px; font-weight: 600; color: #191919;"><strong>Everyone's thinking with your business brain.</strong></div>
+        </div>
+
+        <!-- ZONE 8: THE SHIFT -->
+        <div class="zone body" style="border-bottom: 3px solid #CC785C;">
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 20px; justify-content: center;">
+                    <div class="score-badge"><div class="score-large">86</div>360Brew</div>
+                    <div class="score-badge"><div class="score-large">88</div>System Thinking</div>
+                    <div class="score-badge"><div class="score-large">86</div>Founder Pain</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ZONE 9: FOOTER CTA -->
+        <div class="zone footer">
+            <div class="footer-content">
+                <div class="footer-left">Scaling team but losing institutional context?</div>
+                <div class="footer-right">
+                    <button class="footer-button">Use SENTINEL →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
