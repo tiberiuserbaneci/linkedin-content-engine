@@ -1,0 +1,165 @@
+================================================================================
+        ULTRON LINKEDIN CONTENT CREATOR SKILL - INSTALLATION PACKAGE
+================================================================================
+
+👋 START HERE - READ THIS FIRST
+
+You have everything you need to install a LinkedIn content creation skill 
+into Claude Code. This skill will:
+
+✓ Generate optimized LinkedIn posts + infographics in ONE request
+✓ Score concepts (360Brew algorithm for max reach)
+✓ Create HTML artifacts (1080×1350px, export to PNG/PDF)
+✓ Write first comment CTAs (with routing)
+
+All ready for production use.
+
+================================================================================
+⚡ FASTEST PATH (5 MINUTES)
+================================================================================
+
+1. Open: SKILL_QUICK_START.md
+2. Follow 4 copy-paste steps
+3. Test in Claude Code
+4. Done
+
+================================================================================
+📚 IF YOU WANT MORE DETAILS
+================================================================================
+
+Quick Setup (10 min):        INSTALL_LINKEDIN_SKILL.md
+Full Reference (30 min):    SKILL-linkedin-content-creator.md
+Master Index:               README_LINKEDIN_SKILL.md
+
+================================================================================
+📦 WHAT'S IN THIS PACKAGE
+================================================================================
+
+SKILL INSTALLATION FILES:
+  ✓ SKILL-linkedin-content-creator.md  ← Main skill (copy to .claude/skills/)
+  ✓ INSTALL_LINKEDIN_SKILL.md          ← Step-by-step guide
+  ✓ SKILL_QUICK_START.md               ← 5-minute setup
+  ✓ README_LINKEDIN_SKILL.md           ← Complete navigation
+
+EXPORT & SUPPORT FILES:
+  ✓ export_playwright.py               ← Server-side PNG export
+  ✓ export-bar.js                      ← Browser PNG/PDF export
+  ✓ design-reference.md                ← Brand colors & patterns
+  ✓ All export documentation
+
+EXAMPLE & CHEATSHEETS:
+  ✓ claude-code-cheatsheet-final.html  ← Example artifact
+  ✓ export-bar.js                      ← Export implementation
+  ✓ EXPORT_QUICK_REFERENCE.md          ← Export cheat sheet
+
+================================================================================
+🎯 YOUR IMMEDIATE NEXT STEP
+================================================================================
+
+1. READ: SKILL_QUICK_START.md (takes 2 minutes)
+2. FOLLOW: The 4 copy-paste steps (takes 3 minutes)
+3. TEST: Ask Claude Code to create a LinkedIn post (takes 2 minutes)
+
+Total: 7 minutes from now, you'll have a working LinkedIn content skill.
+
+================================================================================
+✅ AFTER INSTALLATION, YOU CAN ASK CLAUDE CODE:
+================================================================================
+
+"Create a LinkedIn post about Claude Code best practices"
+"Make an infographic showing the Ultron 5-agent system"
+"Create a comparison post: Cowork vs Chat vs Projects"
+"Score this content for 360Brew optimization: [paste]"
+"Generate a 5-slide carousel about [topic]"
+
+Each request generates:
+1. Concept score (Virality/Save-Worthy/Visual/System Thinking)
+2. HTML artifact (1080×1350px, ready to export)
+3. Post copy (hook + body, ready to paste)
+4. First comment CTA (with link routing)
+
+================================================================================
+📖 FULL FILE INDEX
+================================================================================
+
+INSTALLATION (Required):
+  - SKILL-linkedin-content-creator.md       432 lines
+  - INSTALL_LINKEDIN_SKILL.md               353 lines
+  - SKILL_QUICK_START.md                    147 lines
+
+GUIDES & REFERENCE:
+  - README_LINKEDIN_SKILL.md                Navigation + specs
+  - design-reference.md                     Colors, typography
+  
+EXPORT TOOLS:
+  - export_playwright.py                    Server-side PNG export
+  - export-bar.js                           Browser PNG/PDF export
+  - EXPORT_IMPLEMENTATION_GUIDE.md          Full export docs
+  - EXPORT_QUICK_REFERENCE.md               Export cheat sheet
+  - EXPORT_EXAMPLE.html                     Working example
+
+EXAMPLES:
+  - claude-code-cheatsheet-final.html       Production artifact
+
+================================================================================
+🚀 QUICK START IN 4 STEPS
+================================================================================
+
+Step 1: Create Folder
+  mkdir -p .claude/skills/linkedin-content-creator
+
+Step 2: Create SKILL.md
+  Copy content from SKILL-linkedin-content-creator.md
+  Into: .claude/skills/linkedin-content-creator/SKILL.md
+
+Step 3: Update CLAUDE.md
+  Add "## LinkedIn Content Creator Skill" section
+
+Step 4: Test
+  In Claude Code chat:
+  "Create a LinkedIn post about 5 AI agents for founders"
+
+That's it. Takes 5 minutes total.
+
+================================================================================
+❓ QUESTIONS?
+================================================================================
+
+Q: Where do I copy the SKILL.md file?
+A: Into: .claude/skills/linkedin-content-creator/SKILL.md
+
+Q: How do I know it's installed?
+A: Test it. Ask Claude Code to create a LinkedIn post.
+   You should get: Score + HTML artifact + post copy + CTA
+
+Q: Can I customize it for my brand?
+A: Yes. Edit the SKILL.md file. Change colors, ICP, CTA URLs.
+
+Q: What if I only need export functionality?
+A: Use export_playwright.py or export-bar.js directly.
+   See EXPORT_QUICK_REFERENCE.md
+
+================================================================================
+📋 YOUR CHECKLIST
+================================================================================
+
+[ ] Read SKILL_QUICK_START.md
+[ ] Copy SKILL.md to .claude/skills/linkedin-content-creator/
+[ ] Update .claude/CLAUDE.md with skill section
+[ ] Verify: ls .claude/skills/linkedin-content-creator/SKILL.md
+[ ] Test: Ask Claude Code to create a LinkedIn post
+[ ] Celebrate! 🎉
+
+================================================================================
+
+Questions? Check:
+  - SKILL_QUICK_START.md (fastest answers)
+  - INSTALL_LINKEDIN_SKILL.md (detailed walkthrough)
+  - README_LINKEDIN_SKILL.md (full reference)
+
+Ready to start? Open SKILL_QUICK_START.md now.
+
+Created for Ultron / 51ultron.com
+LinkedIn Content Creator Skill v2.0 - Production Ready
+
+================================================================================
