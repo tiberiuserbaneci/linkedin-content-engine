@@ -1,5 +1,31 @@
 {
   "drafts": [
+    {
+      "id": "claude-connectors-2025",
+      "title": "Claude Interactive Connectors",
+      "description": "Strategic positioning: Claude moves from text-only to interface-backed execution",
+      "type": "infographic",
+      "format": "1080×1350px portrait",
+      "date": "2025-01-28",
+      "status": "review",
+      "tags": ["connectors", "execution", "interface", "founder-facing", "controversial"],
+      "path": "/claude-connectors-infographic.html",
+      "spec": "/INFOGRAPHIC_SPEC.md",
+      "thumbnail": "/claude-connectors-infographic.html",
+      "hook": "Most teams still think AI should respond.",
+      "zones": 8,
+      "colors": ["slate-dark", "book-cloth", "ivory-light"],
+      "platform": "linkedin",
+      "dimensions": {
+        "width": 1080,
+        "height": 1350,
+        "ratio": "4:5"
+      },
+      "dwell_time_target": "8-12 seconds",
+      "save_rate_target": "2-4%",
+      "theme": "dark",
+      "design_system": "Anthropic"
+    }
   ],
   "materials": [
     {

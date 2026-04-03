@@ -1,6 +1,8 @@
 'use client'
 
 import { colors } from '@/lib/design-system/theme'
+import { ExportBar } from '@/components/ExportBar'
+import { deployMaterialToLive } from '@/app/actions/deployMaterial'
 import materialsData from '@/lib/materials.json'
 import { useState } from 'react'
 
@@ -10,6 +12,32 @@ export default function MaterialsDrafts() {
   const [selectedDraft, setSelectedDraft] = useState<(typeof drafts)[0] | null>(
     drafts.length > 0 ? drafts[0] : null
   )
+  const [isDeploying, setIsDeploying] = useState(false)
+  const [deployMessage, setDeployMessage] = useState<string | null>(null)
+
+  const handleDeploy = async () => {
+    if (!selectedDraft) return
+
+    try {
+      setIsDeploying(true)
+      setDeployMessage('Deploying...')
+      const result = await deployMaterialToLive(selectedDraft.id)
+
+      if (result.success) {
+        setDeployMessage(`✓ ${result.message}`)
+        // Refresh the page after 2 seconds
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        setDeployMessage(`✗ ${result.message}`)
+      }
+    } catch (error) {
+      setDeployMessage(`✗ Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsDeploying(false)
+    }
+  }
 
   return (
     <div style={{ background: colors.ivory.light, minHeight: '100vh', display: 'flex' }}>
@@ -200,6 +228,13 @@ export default function MaterialsDrafts() {
               </div>
             </header>
 
+            {/* Export Bar */}
+            <ExportBar
+              materialId={selectedDraft.id}
+              materialTitle={selectedDraft.title}
+              elementId="material-preview"
+            />
+
             {/* Preview Content */}
             <div
               style={{
@@ -217,7 +252,9 @@ export default function MaterialsDrafts() {
                   width: '100%',
                 }}
               >
-                {/* Embed the actual preview */}
+                {/* Material Preview Container */}
+                <div id="material-preview">
+                  {/* Embed the actual preview */}
                 {selectedDraft.path && (
                   <div
                     style={{
@@ -240,6 +277,7 @@ export default function MaterialsDrafts() {
                     />
                   </div>
                 )}
+                </div>
 
                 {/* Validation Checklist */}
                 <div
@@ -422,6 +460,7 @@ export default function MaterialsDrafts() {
                     display: 'flex',
                     gap: '12px',
                     justifyContent: 'flex-end',
+                    alignItems: 'center',
                   }}
                 >
                   <button
@@ -439,19 +478,34 @@ export default function MaterialsDrafts() {
                     Back to Draft
                   </button>
                   <button
+                    onClick={handleDeploy}
+                    disabled={isDeploying}
                     style={{
                       padding: '12px 24px',
-                      background: colors.semantic.focus,
+                      background: isDeploying ? colors.cloud.dark : colors.semantic.focus,
                       color: colors.base.white,
                       border: 'none',
                       borderRadius: '6px',
                       fontSize: '14px',
                       fontWeight: 600,
-                      cursor: 'pointer',
+                      cursor: isDeploying ? 'not-allowed' : 'pointer',
+                      opacity: isDeploying ? 0.7 : 1,
+                      transition: 'all 200ms ease-out',
                     }}
                   >
-                    Deploy to Live
+                    {isDeploying ? 'Deploying...' : 'Deploy to Live'}
                   </button>
+                  {deployMessage && (
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: deployMessage.includes('✓') ? colors.semantic.focus : colors.semantic.error,
+                      }}
+                    >
+                      {deployMessage}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
