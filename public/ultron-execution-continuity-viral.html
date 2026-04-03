@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execution Continuity: Deals Die in the Reset</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5ECE3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 1080px;
+            height: 1350px;
+            background: #F5ECE3;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        /* ZONES */
+        .zone {
+            padding: 0;
+        }
+
+        .zone-hero {
+            background: #191919;
+            color: #F5F5F0;
+            padding: 60px 60px;
+            text-align: center;
+            border-bottom: 3px solid #CC785C;
+        }
+
+        .zone-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .side-left, .side-right {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .side-left {
+            background: #F5ECE3;
+            border-right: 2px solid #CC785C;
+        }
+
+        .side-right {
+            background: #EFEBE0;
+        }
+
+        .zone-insight {
+            background: #CC785C;
+            color: #F5F5F0;
+            padding: 40px 60px;
+            text-align: center;
+        }
+
+        .zone-footer {
+            background: #191919;
+            color: #F5F5F0;
+            padding: 40px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+        }
+
+        /* HERO SECTION */
+        .overline {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #CC785C;
+            margin-bottom: 20px;
+        }
+
+        .headline {
+            font-size: 52px;
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 15px;
+        }
+
+        .headline-accent {
+            color: #CC785C;
+        }
+
+        .subheadline {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.6;
+            color: #BFBFBA;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* WORKFLOW SECTION */
+        .workflow-label {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #CC785C;
+            margin-bottom: 10px;
+        }
+
+        .workflow-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #191919;
+            margin-bottom: 20px;
+        }
+
+        .side-right .workflow-title {
+            color: #191919;
+        }
+
+        .step {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .step-marker {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .step.broken .step-marker {
+            background: #EF343B;
+            color: #F5F5F0;
+            font-size: 14px;
+        }
+
+        .step.continuous .step-marker {
+            background: #2D8AF7;
+            color: #F5F5F0;
+        }
+
+        .step-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: #191919;
+            line-height: 1.4;
+        }
+
+        .side-right .step-text {
+            color: #191919;
+        }
+
+        .context-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #CC785C;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(204, 120, 92, 0.3);
+        }
+
+        .context-value {
+            font-size: 13px;
+            font-weight: 400;
+            color: #666663;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* INSIGHT SECTION */
+        .insight-text {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .insight-subtext {
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.6;
+            color: #EFEBE0;
+            margin-top: 12px;
+        }
+
+        /* FOOTER */
+        .footer-left {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .footer-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .footer-cta {
+            background: #CC785C;
+            color: #F5F5F0;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .footer-url {
+            font-size: 12px;
+            color: #BFBFBA;
+            font-weight: 500;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+            .container {
+                width: 90vw;
+                height: auto;
+                aspect-ratio: 1080 / 1350;
+            }
+
+            .zone-hero {
+                padding: 40px 30px;
+            }
+
+            .headline {
+                font-size: 36px;
+            }
+
+            .subheadline {
+                font-size: 13px;
+            }
+
+            .side-left, .side-right {
+                padding: 30px;
+            }
+
+            .zone-footer {
+                padding: 30px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .footer-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ZONE 1: HERO -->
+        <div class="zone zone-hero">
+            <div class="overline">The Founder Mistake</div>
+            <div class="headline">
+                Deals don't die in the <span class="headline-accent">room.</span><br>
+                They die in the <span class="headline-accent">reset.</span>
+            </div>
+            <div class="subheadline">
+                Here's how Ultron keeps the spine alive.
+            </div>
+        </div>
+
+        <!-- ZONE 2: COMPARISON -->
+        <div class="zone zone-comparison">
+            <!-- LEFT: BROKEN WORKFLOW -->
+            <div class="side-left">
+                <div class="workflow-label">WITHOUT A SYSTEM</div>
+                <div class="workflow-title">Broken Handoff</div>
+
+                <div class="step broken">
+                    <div class="step-marker">✕</div>
+                    <div class="step-text"><strong>CALL</strong><br>Context loaded in your head</div>
+                </div>
+
+                <div class="step broken">
+                    <div class="step-marker">✕</div>
+                    <div class="step-text"><strong>NOTES</strong><br>Context written down (somewhere)</div>
+                </div>
+
+                <div class="step broken">
+                    <div class="step-marker">✕</div>
+                    <div class="step-text"><strong>PROPOSAL</strong><br>Context re-explained from scratch</div>
+                </div>
+
+                <div class="step broken">
+                    <div class="step-marker">✕</div>
+                    <div class="step-text"><strong>REVIEW</strong><br>Context partially remembered</div>
+                </div>
+
+                <div class="step broken">
+                    <div class="step-marker">✕</div>
+                    <div class="step-text"><strong>CLOSE</strong><br>Context lost in transition</div>
+                </div>
+
+                <div class="context-label">Context State</div>
+                <div class="context-value">Resets at every stage</div>
+            </div>
+
+            <!-- RIGHT: CONTINUOUS WORKFLOW -->
+            <div class="side-right">
+                <div class="workflow-label">WITH ULTRON</div>
+                <div class="workflow-title">Continuity Logic</div>
+
+                <div class="step continuous">
+                    <div class="step-marker">✓</div>
+                    <div class="step-text"><strong>CALL</strong><br>Context stays live</div>
+                </div>
+
+                <div class="step continuous">
+                    <div class="step-marker">✓</div>
+                    <div class="step-text"><strong>NOTES</strong><br>Context carried forward</div>
+                </div>
+
+                <div class="step continuous">
+                    <div class="step-marker">✓</div>
+                    <div class="step-text"><strong>PROPOSAL</strong><br>Same deal spine powers it</div>
+                </div>
+
+                <div class="step continuous">
+                    <div class="step-marker">✓</div>
+                    <div class="step-text"><strong>REVIEW</strong><br>Full context visible</div>
+                </div>
+
+                <div class="step continuous">
+                    <div class="step-marker">✓</div>
+                    <div class="step-text"><strong>CLOSE</strong><br>Next action obvious</div>
+                </div>
+
+                <div class="context-label">Context State</div>
+                <div class="context-value">Persists across all stages</div>
+            </div>
+        </div>
+
+        <!-- ZONE 3: INSIGHT -->
+        <div class="zone zone-insight">
+            <div class="insight-text">
+                The real AI moat is not <span style="text-decoration: line-through;">better output.</span><br>
+                It's stronger <span style="font-weight: 700;">execution continuity.</span>
+            </div>
+            <div class="insight-subtext">
+                Every break compresses context, blurs ownership, and adds cooling time inside the pipeline.
+            </div>
+        </div>
+
+        <!-- ZONE 4: FOOTER -->
+        <div class="zone zone-footer">
+            <div class="footer-left">
+                Want the system that carries work forward across sales, ops, follow-up, and execution?<br>
+                <strong>Ultron is built for that.</strong>
+            </div>
+            <div class="footer-right">
+                <button class="footer-cta">Learn more →</button>
+                <div class="footer-url">51ultron.com</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
