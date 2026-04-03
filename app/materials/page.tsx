@@ -57,7 +57,7 @@ export default function Materials() {
             {/* Design Tokens */}
             <div
               style={{
-                background: colors.white,
+                background: colors.base.white,
                 border: `1px solid ${colors.cloud.light}`,
                 borderRadius: '8px',
                 padding: '32px',
@@ -89,7 +89,7 @@ export default function Materials() {
             {/* Theme TypeScript */}
             <div
               style={{
-                background: colors.white,
+                background: colors.base.white,
                 border: `1px solid ${colors.cloud.light}`,
                 borderRadius: '8px',
                 padding: '32px',
@@ -119,7 +119,7 @@ export default function Materials() {
             {/* Tailwind Config */}
             <div
               style={{
-                background: colors.white,
+                background: colors.base.white,
                 border: `1px solid ${colors.cloud.light}`,
                 borderRadius: '8px',
                 padding: '32px',
@@ -149,7 +149,7 @@ export default function Materials() {
             {/* Global Styles */}
             <div
               style={{
-                background: colors.white,
+                background: colors.base.white,
                 border: `1px solid ${colors.cloud.light}`,
                 borderRadius: '8px',
                 padding: '32px',
@@ -201,7 +201,7 @@ export default function Materials() {
             {/* Design Skill */}
             <div
               style={{
-                background: colors.white,
+                background: colors.base.white,
                 border: `1px solid ${colors.cloud.light}`,
                 borderRadius: '8px',
                 padding: '32px',
@@ -233,7 +233,7 @@ export default function Materials() {
             {/* Design Playbook */}
             <div
               style={{
-                background: colors.white,
+                background: colors.base.white,
                 border: `1px solid ${colors.cloud.light}`,
                 borderRadius: '8px',
                 padding: '32px',
@@ -265,7 +265,7 @@ export default function Materials() {
             {/* Quick Reference */}
             <div
               style={{
-                background: colors.white,
+                background: colors.base.white,
                 border: `1px solid ${colors.cloud.light}`,
                 borderRadius: '8px',
                 padding: '32px',
@@ -481,7 +481,7 @@ export default function Materials() {
                     height: '80px',
                   }}
                 />
-                <div style={{ padding: '12px', background: 'white' }}>
+                <div style={{ padding: '12px', background: colors.base.white }}>
                   <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
                     {color.name}
                   </div>
