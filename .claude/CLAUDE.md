@@ -6,6 +6,35 @@ This project uses Claude Code to generate, score, and export LinkedIn infographi
 
 ## Skills
 
+### Ultron Complete Knowledge Skill
+
+**Location:** `.claude/skills/ultron-complete/`
+
+**Purpose:** Complete strategic knowledge for Ultron positioning, content creation, and operations.
+
+**Usage:** Ask Claude Code anything about Ultron:
+```
+"What is Ultron?"
+"Score this concept for Ultron standards"
+"Create a LinkedIn post about [topic]"
+"How do we position against ChatGPT?"
+```
+
+**Key Features:**
+- 15 parts covering all Ultron strategy
+- Banned words, hook formulas, footer CTAs
+- Scoring framework (360Brew) targeting 85+
+- Competitive positioning guides
+- Non-negotiable rules documented
+- Brand voice and messaging hierarchy
+- ICP, pain map, 5-agent system details
+
+**Files:**
+- `SKILL.md` — Quick reference skill (auto-triggers for Ultron work)
+- `KNOWLEDGE_BASE.md` — Complete 1,062-line reference (all 15 parts)
+
+---
+
 ### LinkedIn Content Creator Skill
 
 **Location:** `.claude/skills/linkedin-content-creator/SKILL.md`

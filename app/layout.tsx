@@ -43,6 +43,13 @@ export default function RootLayout({
             </a>
 
             <a
+              href="/linkedin-materials/drafts"
+              className="block px-4 py-2 text-slate-300 text-sm font-normal rounded hover:bg-slate-800 hover:text-white transition-colors"
+            >
+              ▸ Drafts & Preview
+            </a>
+
+            <a
               href="/materials"
               className="block px-4 py-2 text-slate-300 text-sm font-normal rounded hover:bg-slate-800 hover:text-white transition-colors"
             >
