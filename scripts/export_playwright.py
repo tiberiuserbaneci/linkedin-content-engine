@@ -1,268 +1,248 @@
 """
-Export Pipeline - Playwright + PIL
-Captures HTML artifacts to PNG at retina quality (1080×1350px @ 144dpi)
+Playwright PNG Export Utility
+Server-side capture for LinkedIn content (1080x1350px at 144dpi)
+
+Usage:
+    python export_playwright.py --html /path/to/artifact.html --output /path/to/output.png
+    
+Features:
+    - Captures at 1080x1350px (LinkedIn standard portrait)
+    - 2x device scale factor (retina quality)
+    - PIL LANCZOS downsampling to exact dimensions
+    - 144dpi export for web
+    - Removes export UI elements before capture
+    - Error handling and logging
 """
 
 import asyncio
-import os
+import argparse
+import logging
 from pathlib import Path
 from PIL import Image
 import io
-import json
-from datetime import datetime
 
-class PlaywrightExporter:
-    def __init__(self, output_dir: str = "/mnt/user-data/outputs"):
-        self.output_dir = output_dir
-        self.dimensions = {
-            'width_px': 1080,
-            'height_px': 1350,
-            'scale_factor': 2,  # 2x for retina
-            'dpi': 144
-        }
-        
-        # Ensure output dir exists
-        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    print("ERROR: Playwright not installed. Run: pip install playwright pillow")
+    print("Then: playwright install chromium")
+    exit(1)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Export dimensions (LinkedIn standard)
+EXPORT_W_PX = 1080
+EXPORT_H_PX = 1350
+DEVICE_SCALE_FACTOR = 2  # Retina (2x)
+CAPTURE_W_PX = EXPORT_W_PX * DEVICE_SCALE_FACTOR  # 2160px capture
+CAPTURE_H_PX = EXPORT_H_PX * DEVICE_SCALE_FACTOR  # 2700px capture
+DPI = 144  # Web standard
+
+
+async def capture_html_to_png(
+    html_path: str,
+    output_path: str,
+    remove_export_bar: bool = True,
+    viewport_width: int = 1080,
+    viewport_height: int = 1350,
+    timeout: int = 30000
+) -> bool:
+    """
+    Capture HTML artifact to PNG at LinkedIn dimensions using Playwright.
     
-    async def capture_html(
-        self,
-        html_content: str,
-        filename: str = "artifact",
-        hide_export_bar: bool = True
-    ) -> dict:
-        """
-        Capture HTML to PNG at 1080×1350 @ 144dpi retina
+    Args:
+        html_path: Path to HTML file
+        output_path: Path to save PNG
+        remove_export_bar: Hide #export-bar before capture
+        viewport_width: Viewport width in px (default: 1080)
+        viewport_height: Viewport height in px (default: 1350)
+        timeout: Navigation timeout in ms (default: 30000)
         
-        Args:
-            html_content: Full HTML string
-            filename: Output filename (without extension)
-            hide_export_bar: Remove #export-bar before capture
-            
-        Returns:
-            dict with png_path, png_filename, file_size, dimensions, dpi
-        """
-        try:
-            from playwright.async_api import async_playwright
-        except ImportError:
-            print("Installing Playwright...")
-            os.system("pip install playwright --break-system-packages")
-            from playwright.async_api import async_playwright
-        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    
+    html_file = Path(html_path)
+    output_file = Path(output_path)
+    
+    # Validation
+    if not html_file.exists():
+        logger.error(f"HTML file not found: {html_path}")
+        return False
+    
+    if not output_file.parent.exists():
+        logger.error(f"Output directory not found: {output_file.parent}")
+        return False
+    
+    try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True,
-                args=['--no-sandbox']
+            logger.info("Launching Chromium browser...")
+            browser = await p.chromium.launch()
+            
+            # Create context with exact viewport
+            context = await browser.new_context(
+                viewport={'width': viewport_width, 'height': viewport_height},
+                device_scale_factor=DEVICE_SCALE_FACTOR
             )
             
-            page = await browser.new_page(
-                viewport={
-                    'width': self.dimensions['width_px'],
-                    'height': self.dimensions['height_px']
-                },
-                device_scale_factor=self.dimensions['scale_factor']
+            page = await context.new_page()
+            
+            # Load HTML file
+            html_url = html_file.as_uri()
+            logger.info(f"Loading HTML from: {html_url}")
+            await page.goto(html_url, wait_until='networkidle', timeout=timeout)
+            
+            # Wait for images/fonts to load
+            await page.wait_for_load_state('networkidle')
+            logger.info("Page loaded successfully")
+            
+            # Remove export bar if requested (prevents it from appearing in PNG)
+            if remove_export_bar:
+                logger.info("Hiding export bar...")
+                await page.evaluate("""
+                    const bar = document.getElementById('export-bar');
+                    if (bar) {
+                        bar.style.display = 'none';
+                    }
+                """)
+            
+            # Get actual page height to handle variable content
+            actual_height = await page.evaluate("""
+                () => {
+                    const target = document.getElementById('artifact') || document.body;
+                    return Math.max(
+                        target.scrollHeight,
+                        target.offsetHeight
+                    );
+                }
+            """)
+            
+            logger.info(f"Actual page height: {actual_height}px")
+            
+            # Capture at 2x scale
+            logger.info(f"Capturing at {CAPTURE_W_PX}x{CAPTURE_H_PX}px (2x scale)...")
+            screenshot_bytes = await page.screenshot(
+                path=None,  # Return bytes, don't save
+                type='png',
+                scale='device',  # Use device scale factor
+                full_page=False  # Use viewport size
             )
             
-            # Set content
-            await page.set_content(html_content, wait_until='networkidle')
+            logger.info("Screenshot captured, processing with PIL...")
             
-            # Hide export bar if present
-            if hide_export_bar:
-                try:
-                    await page.locator('#export-bar').evaluate('el => el.style.display = "none"')
-                except:
-                    pass  # Export bar not present, continue
+            # Load screenshot into PIL
+            screenshot_img = Image.open(io.BytesIO(screenshot_bytes))
+            logger.info(f"Screenshot size: {screenshot_img.size}")
             
-            # Capture screenshot (2160×2700 at 2x scale)
-            screenshot = await page.screenshot(full_page=True, type='png')
-            
-            await browser.close()
-            
-            # Downsample via PIL LANCZOS
-            img = Image.open(io.BytesIO(screenshot))
-            
-            # Current: 2160×2700 (2x scale)
-            # Target: 1080×1350 (1x at 144dpi)
-            img_downsampled = img.resize(
-                (self.dimensions['width_px'], self.dimensions['height_px']),
+            # Downsample from 2x to 1x using LANCZOS (high-quality)
+            final_img = screenshot_img.resize(
+                (EXPORT_W_PX, EXPORT_H_PX),
                 Image.Resampling.LANCZOS
             )
             
-            # Save @ 144 DPI
-            png_filename = f"{filename}-1080x1350.png"
-            png_path = os.path.join(self.output_dir, png_filename)
-            
-            img_downsampled.save(
-                png_path,
+            # Save with DPI metadata
+            final_img.save(
+                output_file,
                 'PNG',
-                dpi=(self.dimensions['dpi'], self.dimensions['dpi']),
-                optimize=True
+                dpi=(DPI, DPI)
             )
             
-            # Get file stats
-            file_size = os.path.getsize(png_path)
+            logger.info(f"✓ PNG saved: {output_file}")
+            logger.info(f"  Dimensions: {final_img.size}")
+            logger.info(f"  DPI: {DPI}")
+            logger.info(f"  File size: {output_file.stat().st_size / 1024:.1f} KB")
             
-            return {
-                'success': True,
-                'png_path': png_path,
-                'png_filename': png_filename,
-                'file_size': file_size,
-                'file_size_kb': round(file_size / 1024, 2),
-                'dimensions': {
-                    'width': self.dimensions['width_px'],
-                    'height': self.dimensions['height_px']
-                },
-                'dpi': self.dimensions['dpi'],
-                'scale_factor': self.dimensions['scale_factor'],
-                'captured_at': datetime.now().isoformat()
-            }
-        
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'error_type': type(e).__name__
-            }
-    
-    async def batch_export(
-        self,
-        html_variants: list,
-        batch_name: str = "batch",
-        on_progress = None
-    ) -> dict:
-        """
-        Export multiple HTML variants in parallel
-        
-        Args:
-            html_variants: List of {'html': str, 'filename': str}
-            batch_name: Batch identifier for logging
-            on_progress: Callback function(current, total)
+            await context.close()
+            await browser.close()
             
-        Returns:
-            dict with all exports, batch stats
-        """
-        total = len(html_variants)
-        exports = []
-        
-        for idx, variant in enumerate(html_variants):
-            if on_progress:
-                on_progress(idx + 1, total)
+            return True
             
-            result = await self.capture_html(
-                html_content=variant['html'],
-                filename=variant.get('filename', f"{batch_name}-{idx+1}")
-            )
-            
-            exports.append(result)
-        
-        return {
-            'batch_name': batch_name,
-            'total_variants': total,
-            'successful_exports': sum(1 for e in exports if e.get('success', False)),
-            'failed_exports': sum(1 for e in exports if not e.get('success', False)),
-            'exports': exports,
-            'batch_completed_at': datetime.now().isoformat()
-        }
-    
-    def export_sync(self, html_content: str, filename: str = "artifact") -> dict:
-        """
-        Synchronous wrapper for capture_html (for use in non-async contexts)
-        """
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(self.capture_html(html_content, filename))
-        loop.close()
-        return result
+    except Exception as e:
+        logger.error(f"✗ Capture failed: {str(e)}", exc_info=True)
+        return False
 
 
-class PDFExporter:
-    """Export HTML to PDF at LinkedIn dimensions"""
+def main():
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description='Capture LinkedIn artifact to PNG using Playwright',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python export_playwright.py --html artifact.html --output artifact.png
+  python export_playwright.py --html artifact.html --output artifact.png --width 1080 --height 1350
+  python export_playwright.py --html artifact.html --output artifact.png --keep-export-bar
+        """
+    )
     
-    def __init__(self, output_dir: str = "/mnt/user-data/outputs"):
-        self.output_dir = output_dir
-        # mm at 96dpi: px / 96 * 25.4
-        self.w_mm = 285.75  # 1080px
-        self.h_mm = 357.19  # 1350px
+    parser.add_argument(
+        '--html',
+        required=True,
+        help='Path to HTML artifact file'
+    )
+    parser.add_argument(
+        '--output',
+        required=True,
+        help='Path to save PNG output'
+    )
+    parser.add_argument(
+        '--width',
+        type=int,
+        default=1080,
+        help='Viewport width in pixels (default: 1080)'
+    )
+    parser.add_argument(
+        '--height',
+        type=int,
+        default=1350,
+        help='Viewport height in pixels (default: 1350)'
+    )
+    parser.add_argument(
+        '--keep-export-bar',
+        action='store_true',
+        help='Keep export bar in screenshot (default: remove it)'
+    )
+    parser.add_argument(
+        '--timeout',
+        type=int,
+        default=30,
+        help='Page load timeout in seconds (default: 30)'
+    )
     
-    async def export_single(self, html_content: str, filename: str = "artifact") -> dict:
-        """Export single HTML to PDF"""
-        try:
-            from playwright.async_api import async_playwright
-        except ImportError:
-            os.system("pip install playwright --break-system-packages")
-            from playwright.async_api import async_playwright
-        
-        try:
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True, args=['--no-sandbox'])
-                page = await browser.new_page(viewport={'width': 1080, 'height': 1350})
-                await page.set_content(html_content, wait_until='networkidle')
-                
-                pdf_filename = f"{filename}-1080x1350.pdf"
-                pdf_path = os.path.join(self.output_dir, pdf_filename)
-                
-                await page.pdf(
-                    path=pdf_path,
-                    format='A4',
-                    margin={'top': '0', 'bottom': '0', 'left': '0', 'right': '0'}
-                )
-                
-                await browser.close()
-                
-                file_size = os.path.getsize(pdf_path)
-                
-                return {
-                    'success': True,
-                    'pdf_path': pdf_path,
-                    'pdf_filename': pdf_filename,
-                    'file_size': file_size,
-                    'file_size_kb': round(file_size / 1024, 2)
-                }
-        
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
-
-
-def log_export_result(result: dict, variant_num: int = 1):
-    """Pretty print export result"""
-    if result.get('success'):
-        print(f"✓ Variant {variant_num}: {result['png_filename']} ({result['file_size_kb']}KB)")
+    args = parser.parse_args()
+    
+    logger.info("=" * 60)
+    logger.info("PLAYWRIGHT PNG EXPORT - LINKEDIN STANDARD")
+    logger.info("=" * 60)
+    logger.info(f"HTML Input:      {args.html}")
+    logger.info(f"PNG Output:      {args.output}")
+    logger.info(f"Dimensions:      {args.width}x{args.height}px")
+    logger.info(f"Export Scale:    2x retina (→ {args.width}x{args.height}px final)")
+    logger.info(f"DPI:             {DPI}")
+    logger.info(f"Remove Export:   {not args.keep_export_bar}")
+    logger.info("=" * 60)
+    
+    success = asyncio.run(capture_html_to_png(
+        html_path=args.html,
+        output_path=args.output,
+        remove_export_bar=not args.keep_export_bar,
+        viewport_width=args.width,
+        viewport_height=args.height,
+        timeout=args.timeout * 1000
+    ))
+    
+    if success:
+        logger.info("\n✓ Export completed successfully")
+        exit(0)
     else:
-        print(f"✗ Variant {variant_num}: ERROR - {result.get('error')}")
-
-
-async def test_exporter():
-    """Test the exporter with a simple HTML"""
-    html = """<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        * { margin: 0; padding: 0; }
-        body {
-            width: 1080px;
-            height: 1350px;
-            background: #F8F6F1;
-            font-family: Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        h1 { color: #111; font-size: 48px; }
-    </style>
-</head>
-<body>
-    <h1>Test Export</h1>
-</body>
-</html>"""
-    
-    exporter = PlaywrightExporter()
-    result = await exporter.capture_html(html, filename="test")
-    print(json.dumps(result, indent=2))
+        logger.error("\n✗ Export failed")
+        exit(1)
 
 
 if __name__ == '__main__':
-    print("Playwright Exporter Module Loaded")
-    print("Run: asyncio.run(test_exporter()) to test")
+    main()

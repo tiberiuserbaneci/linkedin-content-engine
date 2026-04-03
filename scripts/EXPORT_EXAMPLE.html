@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Example - 51ultron.com</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        
+        #artifact {
+            width: 1080px;
+            height: 1350px;
+            background: linear-gradient(135deg, #F5ECE3 0%, #EFEBE0 100%);
+            margin: 20px auto 100px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        #artifact h1 {
+            font-size: 72px;
+            font-weight: 900;
+            color: #111;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+        
+        #artifact h1 span { color: #C94A22; }
+        
+        #artifact p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+            max-width: 600px;
+        }
+        
+        .feature-box {
+            background: #fff;
+            border: 2px solid #111;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: left;
+            max-width: 600px;
+        }
+        
+        .feature-box h3 {
+            color: #C94A22;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .feature-box p {
+            font-size: 14px;
+            color: #333;
+            margin: 0;
+        }
+        
+        #export-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(17, 17, 17, 0.95);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+            font-family: Arial, sans-serif;
+        }
+        
+        .export-label {
+            font-size: 11px;
+            color: #888;
+            margin-right: auto;
+            letter-spacing: 0.05em;
+        }
+        
+        .export-btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: opacity 0.15s;
+        }
+        
+        .export-btn:hover:not(:disabled) { opacity: 0.8; }
+        .export-btn:disabled { opacity: 0.5; cursor: wait; }
+        
+        .btn-png { background: #F8F6F1; color: #111; }
+        .btn-pdf { background: #C94A22; color: #fff; }
+    </style>
+</head>
+<body>
+    <!-- ARTIFACT CONTENT (wrapped in #artifact div) -->
+    <div id="artifact">
+        <h1>Export <span>Example</span></h1>
+        <p>Click the buttons below to download as PNG or PDF</p>
+        
+        <div class="feature-box">
+            <h3>Server-Side (Playwright)</h3>
+            <p>python export_playwright.py --html file.html --output file.png</p>
+        </div>
+        
+        <div class="feature-box">
+            <h3>Browser-Based (HTML2Canvas)</h3>
+            <p>Click "Download PNG" or "Download PDF" button at bottom</p>
+        </div>
+        
+        <div class="feature-box">
+            <h3>Specifications</h3>
+            <p>1080x1350px • 2x retina scale • 144dpi • LinkedIn standard</p>
+        </div>
+    </div>
+    
+    <!-- EXPORT BAR (fixed at bottom) -->
+    <div id="export-bar">
+        <span class="export-label">1080 x 1350px • LinkedIn standard</span>
+        <button class="export-btn btn-png" id="export-png-btn" onclick="exportPNG()">Download PNG</button>
+        <button class="export-btn btn-pdf" id="export-pdf-btn" onclick="exportPDF()">Download PDF</button>
+    </div>
+    
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script>
+        // Configuration
+        const ARTIFACT = document.getElementById('artifact');
+        const W = 1080, H = 1350;
+        const W_MM = 285.75, H_MM = 357.19;
+        
+        // PNG Export
+        async function exportPNG() {
+            const btn = document.getElementById('export-png-btn');
+            const bar = document.getElementById('export-bar');
+            
+            btn.disabled = true;
+            btn.textContent = 'Capturing...';
+            bar.style.display = 'none';
+            
+            try {
+                const canvas = await html2canvas(ARTIFACT, {
+                    width: W,
+                    height: H,
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: null,
+                    logging: false,
+                    onclone: (doc) => {
+                        const cloneBar = doc.getElementById('export-bar');
+                        if (cloneBar) cloneBar.remove();
+                    }
+                });
+                
+                const link = document.createElement('a');
+                link.download = `export-example-${W}x${H}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                bar.style.display = 'flex';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Download PNG';
+            }
+        }
+        
+        // PDF Export
+        async function exportPDF() {
+            const btn = document.getElementById('export-pdf-btn');
+            const bar = document.getElementById('export-bar');
+            
+            btn.disabled = true;
+            btn.textContent = 'Generating PDF...';
+            bar.style.display = 'none';
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: [W_MM, H_MM],
+                    compress: true
+                });
+                
+                const canvas = await html2canvas(ARTIFACT, {
+                    width: W,
+                    height: H,
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: null,
+                    logging: false,
+                    onclone: (doc) => {
+                        const cloneBar = doc.getElementById('export-bar');
+                        if (cloneBar) cloneBar.remove();
+                    }
+                });
+                
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, W_MM, H_MM);
+                pdf.save(`export-example-${W}x${H}.pdf`);
+                
+                bar.style.display = 'flex';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Download PDF';
+            }
+        }
+        
+        console.log('✓ Export bar ready. Click PNG or PDF buttons to download.');
+    </script>
+</body>
+</html>

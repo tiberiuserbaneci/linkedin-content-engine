@@ -1,0 +1,71 @@
+## Export Workflow (Playwright + Browser)
+
+### Server-Side PNG Export (Recommended for CI/CD)
+
+```bash
+# Setup (one-time)
+pip install playwright pillow
+playwright install chromium
+
+# Capture artifact to PNG at 1080x1350px, 2x retina, 144dpi
+python export_playwright.py --html artifact.html --output artifact.png
+
+# Output will be in current directory as PNG file
+```
+
+**Why Playwright?**
+- Server-side: No browser window needed
+- Consistent: Same output every time
+- High-quality: 2x capture → LANCZOS downsampling
+- Automated: Perfect for CI/CD pipelines
+- Fast: Captures in ~5 seconds per artifact
+
+### Browser-Based Download (For Manual Export)
+
+For any HTML artifact with export buttons:
+
+1. Include in `<div id="artifact">` (your content goes here)
+
+2. Add before `</body>`:
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="export-bar.js"></script>
+```
+
+3. That's it. Export buttons appear at bottom automatically.
+
+**Buttons export:**
+- PNG: 1080x1350px, 2x scale (html2canvas)
+- PDF: Same dimensions, full-page PDF (jsPDF)
+
+### Files
+
+- `export_playwright.py` → Server-side PNG capture (Python 3.8+)
+- `export-bar.js` → Browser export module (works in any HTML)
+- Full guide → `EXPORT_IMPLEMENTATION_GUIDE.md`
+
+### Common Commands
+
+```bash
+# Basic capture
+python export_playwright.py --html artifact.html --output artifact.png
+
+# Keep export bar in PNG (debug)
+python export_playwright.py --html artifact.html --output artifact.png --keep-export-bar
+
+# Custom timeout (if slow connection)
+python export_playwright.py --html artifact.html --output artifact.png --timeout 60
+```
+
+### Standards
+
+All exports meet LinkedIn requirements:
+- **Dimensions:** 1080x1350px (portrait standard)
+- **Quality:** 2x capture scale (retina-ready)
+- **DPI:** 144dpi (web standard)
+- **Format:** PNG or PDF, both ready to post
+
+---
+
+**Next Step:** Copy `export_playwright.py` and `export-bar.js` to your project root. Reference in build scripts or workflows.
