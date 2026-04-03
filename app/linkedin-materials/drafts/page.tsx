@@ -1,10 +1,14 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { colors } from '@/lib/design-system/theme'
-import { ExportBar } from '@/components/ExportBar'
 import { deployMaterialToLive } from '@/app/actions/deployMaterial'
 import materialsData from '@/lib/materials.json'
 import { useState } from 'react'
+
+const ExportBar = dynamic(() => import('@/components/ExportBar').then((mod) => mod.ExportBar), {
+  ssr: false,
+})
 
 export default function MaterialsDrafts() {
   const drafts = materialsData.drafts || []
