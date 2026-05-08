@@ -22,11 +22,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Normalize URL: strip trailing slash and query params for consistent dedup
+    const normalizedUrl = linkedin_url.replace(/\/$/, "").split("?")[0];
+
     // Extract handle from URL
-    const handleMatch = linkedin_url.match(
+    const handleMatch = normalizedUrl.match(
       /linkedin\.com\/in\/([^/?]+)/
     );
-    const linkedin_handle = handleMatch?.[1] ?? linkedin_url;
+    const linkedin_handle = handleMatch?.[1] ?? normalizedUrl;
 
     // Step 1: Supabase client init
     steps.push("creating supabase client");
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Scrape posts via Apify
     steps.push("starting apify scrape");
-    const { posts, author } = await scrapeLinkedInPosts(linkedin_url, max_posts);
+    const { posts, author } = await scrapeLinkedInPosts(normalizedUrl, max_posts);
     steps.push(`apify scrape done: ${posts.length} posts`);
 
     // Step 3: Upsert profile (check-then-update/insert to avoid duplicates)
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
     const { data: existing } = await supabase
       .from("profiles")
       .select("id")
-      .eq("linkedin_url", linkedin_url)
+      .eq("linkedin_url", normalizedUrl)
       .maybeSingle();
 
     let profile;
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
       const { data: inserted, error: insertError } = await supabase
         .from("profiles")
         .insert({
-          linkedin_url,
+          linkedin_url: normalizedUrl,
           linkedin_handle,
           full_name: author.name,
           headline: author.headline,
@@ -120,7 +123,7 @@ export async function POST(request: NextRequest) {
     const postRecords = posts
       .map((post) => ({
         profile_id: profile.id,
-        linkedin_post_url: post.url || `${linkedin_url}/post-${Date.now()}-${Math.random()}`,
+        linkedin_post_url: post.url || `${normalizedUrl}/post-${Date.now()}-${Math.random()}`,
         content: post.content,
         published_at: post.published_at,
         reactions_count: post.reactions_count,
@@ -137,7 +140,10 @@ export async function POST(request: NextRequest) {
     if (postRecords.length > 0) {
       const { error: postsError } = await supabase
         .from("posts")
-        .insert(postRecords);
+        .upsert(postRecords, {
+          onConflict: "linkedin_post_url",
+          ignoreDuplicates: true,
+        });
 
       if (postsError) {
         return NextResponse.json(
