@@ -37,26 +37,35 @@ export async function GET(
     }
 
     // Get all posts for this profile (by reactions)
-    const { data: allPosts } = await supabase
+    const { data: rawPosts } = await supabase
       .from("posts")
       .select("id, content, reactions_count, comments_count, shares_count, linkedin_post_url, published_at, post_type")
       .eq("profile_id", id)
       .order("reactions_count", { ascending: false });
 
-    const topPosts = (allPosts || []).slice(0, 5);
+    // Deduplicate by first 120 chars of content (same post scraped as text+image variants)
+    const seenContent = new Set<string>();
+    const allPosts = (rawPosts || []).filter(post => {
+      const key = post.content.trim().slice(0, 120);
+      if (seenContent.has(key)) return false;
+      seenContent.add(key);
+      return true;
+    });
 
-    const totalReactions = allPosts?.reduce((sum, p) => sum + p.reactions_count, 0) || 0;
-    const totalComments = allPosts?.reduce((sum, p) => sum + p.comments_count, 0) || 0;
-    const avgReactions = allPosts?.length ? Math.round(totalReactions / allPosts.length) : 0;
-    const avgComments = allPosts?.length ? Math.round(totalComments / allPosts.length) : 0;
+    const topPosts = allPosts.slice(0, 5);
+
+    const totalReactions = allPosts.reduce((sum, p) => sum + p.reactions_count, 0);
+    const totalComments = allPosts.reduce((sum, p) => sum + p.comments_count, 0);
+    const avgReactions = allPosts.length ? Math.round(totalReactions / allPosts.length) : 0;
+    const avgComments = allPosts.length ? Math.round(totalComments / allPosts.length) : 0;
 
     return NextResponse.json({
       analysis,
       ideas: ideas || [],
       top_posts: topPosts,
-      all_posts: allPosts || [],
+      all_posts: allPosts,
       engagement_stats: {
-        total_posts: allPosts?.length || 0,
+        total_posts: allPosts.length,
         total_reactions: totalReactions,
         total_comments: totalComments,
         avg_reactions: avgReactions,

@@ -123,10 +123,20 @@ export async function scrapeLinkedInPosts(
   const items: ApifyDatasetItem[] = await datasetRes.json();
 
   // Filter out non-post items (e.g. type: "document" wrappers)
-  const postItems = items.filter((item) => {
+  const filtered = items.filter((item) => {
     if (item.type === "document") return false;
     const text = item.text || item.content;
     return typeof text === "string" && text.trim().length > 0;
+  });
+
+  // Deduplicate: same post returned as text+image variants — keep first per URL
+  const seenUrls = new Set<string>();
+  const postItems = filtered.filter((item) => {
+    const url = (item.url as string | undefined)?.trim();
+    if (!url) return true;
+    if (seenUrls.has(url)) return false;
+    seenUrls.add(url);
+    return true;
   });
 
   if (!postItems.length) {
