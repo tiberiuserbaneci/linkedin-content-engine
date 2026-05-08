@@ -135,7 +135,7 @@ export async function analyzeProfile(
 
   const response = await client.beta.messages.create({
     model: MODEL,
-    max_tokens: 4000,
+    max_tokens: 2500,
     betas: ["prompt-caching-2024-07-31"],
     system: [
       {
