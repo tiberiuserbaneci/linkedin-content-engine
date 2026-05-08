@@ -45,6 +45,8 @@ export default function Dashboard() {
   const [tab, setTab] = useState<Tab>("ideas");
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const fetchProfiles = useCallback(async () => {
     try {
@@ -98,6 +100,39 @@ export default function Dashboard() {
       fetchAnalysis(selectedId);
     }
   }, [selectedId, fetchAnalysis]);
+
+  async function runAnalysis(profileId: string) {
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    try {
+      const profileRes = await fetch("/api/analyze/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: profileId }),
+      });
+      if (!profileRes.ok) {
+        const d = await profileRes.json();
+        throw new Error(d.error || "Profile analysis failed");
+      }
+      const { analysis_id } = await profileRes.json();
+
+      const ideasRes = await fetch("/api/analyze/ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysis_id, profile_id: profileId }),
+      });
+      if (!ideasRes.ok) {
+        const d = await ideasRes.json();
+        throw new Error(d.error || "Ideas generation failed");
+      }
+
+      await fetchAnalysis(profileId);
+    } catch (err) {
+      setAnalysisError(err instanceof Error ? err.message : "Analysis failed");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }
 
   async function handleStatusChange(ideaId: string, status: IdeaStatus) {
     try {
@@ -226,12 +261,26 @@ export default function Dashboard() {
               ) : (
                 <div className="flex-1 flex items-center justify-center p-12 text-center">
                   <div>
-                    <p className="text-[#666] text-sm">
+                    <p className="text-[#666] text-sm mb-4">
                       No analysis yet for this profile.
                     </p>
-                    <p className="text-[#444] text-xs mt-1">
-                      Add the profile again to run analysis.
-                    </p>
+                    {analysisError && (
+                      <p className="text-red-400 text-xs mb-3">{analysisError}</p>
+                    )}
+                    <button
+                      onClick={() => selectedId && runAnalysis(selectedId)}
+                      disabled={analysisLoading}
+                      className="px-5 py-2.5 bg-[#DA4E24] text-white rounded-lg font-medium text-sm hover:bg-[#DA4E24]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                    >
+                      {analysisLoading ? (
+                        <>
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Analysing...
+                        </>
+                      ) : (
+                        "Run Analysis"
+                      )}
+                    </button>
                   </div>
                 </div>
               )}
