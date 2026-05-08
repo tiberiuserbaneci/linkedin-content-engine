@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const client = new Anthropic();
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 500,
       system: "You are writing a LinkedIn DM from a founder to a VC. Be direct, specific, and human. No fluff. Max 300 characters. Reference something specific about their role or firm focus if available. The sender builds Ultron — an AI operating system for founder-led businesses that replaces manual ops with AI agents (sales, content, outreach, research). Focus: why this VC should care now.",
       messages: [

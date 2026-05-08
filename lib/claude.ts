@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ContentAnalysis, ContentIdea, PatternMatch } from "./database.types";
 
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-6";
 
 function getClient() {
   return new Anthropic();
@@ -38,7 +38,7 @@ function tierPosts(posts: LightPost[]): TieredPost[] {
   }));
 }
 
-const ANALYSIS_PROMPT = `You are an expert LinkedIn content strategist. Analyse the following LinkedIn posts from a single creator. Each post is labelled with its performance tier: TOP_PERFORMER (top 30% by reactions), BASELINE (middle 40%), or LOW_PERFORMER (bottom 30%).
+const ANALYSIS_SYSTEM_PROMPT = `You are an expert LinkedIn content strategist. Analyse the following LinkedIn posts from a single creator. Each post is labelled with its performance tier: TOP_PERFORMER (top 30% by reactions), BASELINE (middle 40%), or LOW_PERFORMER (bottom 30%).
 
 Your task: Generate a comprehensive Winning Content Profile with exactly these 10 sections. Be specific, data-driven, and actionable.
 
@@ -118,10 +118,7 @@ Respond with valid JSON matching this exact structure:
     "Checklist item 1 - specific and actionable",
     "Checklist item 2 - specific and actionable"
   ]
-}
-
-POSTS DATA:
-`;
+}`;
 
 export async function analyzeProfile(
   posts: LightPost[]
@@ -136,13 +133,21 @@ export async function analyzeProfile(
     )
     .join("\n\n");
 
-  const response = await client.messages.create({
+  const response = await client.beta.messages.create({
     model: MODEL,
     max_tokens: 4000,
+    betas: ["prompt-caching-2024-07-31"],
+    system: [
+      {
+        type: "text",
+        text: ANALYSIS_SYSTEM_PROMPT,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
     messages: [
       {
         role: "user",
-        content: ANALYSIS_PROMPT + postsText,
+        content: `POSTS DATA:\n${postsText}`,
       },
     ],
   });
