@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
-import { analyzeProfile, generateIdeas } from "@/lib/claude";
+import { analyzeProfile } from "@/lib/claude";
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      profile_id,
-      research_space,
-    }: { profile_id: string; research_space?: string } = body;
+    const { profile_id }: { profile_id: string } = body;
 
     if (!profile_id) {
       return NextResponse.json(
@@ -21,13 +18,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Fetch top 20 posts by reactions for analysis (limits Claude API payload)
+    // Fetch top 15 posts by reactions, only content + counts
     const { data: posts, error: postsError } = await supabase
       .from("posts")
       .select("content, reactions_count, comments_count")
       .eq("profile_id", profile_id)
       .order("reactions_count", { ascending: false })
-      .limit(20);
+      .limit(15);
 
     if (postsError) {
       throw new Error(`Failed to fetch posts: ${postsError.message}`);
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Analyze posts with Claude
+    // Analyze posts with Claude (profile only, no ideas)
     const analysisData = await analyzeProfile(posts);
 
     // Save analysis
@@ -57,34 +54,14 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to save analysis: ${analysisError.message}`);
     }
 
-    // Step 2: Generate ideas with Claude + web search
-    const ideasData = await generateIdeas(analysis, research_space);
-
-    // Save ideas
-    const ideaRecords = ideasData.map((idea) => ({
-      analysis_id: analysis.id,
-      profile_id,
-      ...idea,
-    }));
-
-    const { data: ideas, error: ideasError } = await supabase
-      .from("content_ideas")
-      .insert(ideaRecords)
-      .select();
-
-    if (ideasError) {
-      throw new Error(`Failed to save ideas: ${ideasError.message}`);
-    }
-
     return NextResponse.json({
       analysis_id: analysis.id,
       analysis,
-      ideas,
     });
   } catch (error) {
-    console.error("Analysis error:", error);
+    console.error("Profile analysis error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Analysis failed" },
+      { error: error instanceof Error ? error.message : "Profile analysis failed" },
       { status: 500 }
     );
   }

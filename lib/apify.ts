@@ -1,7 +1,8 @@
 const APIFY_TOKEN = process.env.APIFY_TOKEN!;
 const ACTOR_ID = "supreme_coder~linkedin-post";
 const POLL_INTERVAL_MS = 5000;
-const MAX_TIMEOUT_MS = 180000; // 3 minutes
+const MAX_TIMEOUT_MS = 90000; // 90 seconds — abort early to avoid burning credits
+const HARD_POST_CAP = 50; // Never request more than 50 posts
 
 interface ApifyRunResponse {
   data: {
@@ -15,15 +16,18 @@ interface ApifyDatasetItem {
   text?: string;
   content?: string;
   url?: string;
-  postedAt?: string;
-  reactionsCount?: number;
-  commentsCount?: number;
-  sharesCount?: number;
+  postedAtISO?: string;
+  postedAtTimestamp?: number;
+  numLikes?: number;
+  numComments?: number;
+  numShares?: number;
+  type?: string;
   author?: {
-    name?: string;
-    headline?: string;
-    profilePicture?: string;
-    followersCount?: number;
+    firstName?: string;
+    lastName?: string;
+    occupation?: string;
+    picture?: string;
+    [key: string]: unknown;
   };
   [key: string]: unknown;
 }
@@ -35,6 +39,7 @@ export interface ScrapedPost {
   reactions_count: number;
   comments_count: number;
   shares_count: number;
+  post_type: string;
   raw_json: Record<string, unknown>;
 }
 
@@ -42,14 +47,31 @@ export interface ScrapedAuthor {
   name: string;
   headline: string | null;
   avatar_url: string | null;
-  followers_count: number;
+  followers_count: number | null;
+}
+
+function parseDate(isoStr?: string, timestamp?: number): string | null {
+  // Prefer ISO string
+  if (isoStr && typeof isoStr === "string" && isoStr.trim()) {
+    const d = new Date(isoStr);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  // Fall back to Unix timestamp (milliseconds)
+  if (timestamp && typeof timestamp === "number") {
+    const ts = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+    return new Date(ts).toISOString();
+  }
+  return null;
 }
 
 export async function scrapeLinkedInPosts(
   linkedinUrl: string,
   maxPosts: number = 50
 ): Promise<{ posts: ScrapedPost[]; author: ScrapedAuthor }> {
-  // Start the actor run
+  // Hard cap to prevent burning credits
+  const safeLimit = Math.min(maxPosts, HARD_POST_CAP);
+
+  // Start the actor run — input field is "limitPerSource"
   const startRes = await fetch(
     `https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
     {
@@ -57,7 +79,7 @@ export async function scrapeLinkedInPosts(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         urls: [linkedinUrl],
-        limitPerSource: maxPosts,
+        limitPerSource: safeLimit,
       }),
     }
   );
@@ -76,7 +98,9 @@ export async function scrapeLinkedInPosts(
 
   while (status !== "SUCCEEDED" && status !== "FAILED" && status !== "ABORTED") {
     if (Date.now() - startTime > MAX_TIMEOUT_MS) {
-      throw new Error("Apify actor run timed out after 3 minutes");
+      // Try to abort the run to stop credit consumption
+      fetch(`https://api.apify.com/v2/actor-runs/${runId}/abort?token=${APIFY_TOKEN}`, { method: "POST" }).catch(() => {});
+      throw new Error("Scraping taking too long, try with fewer posts");
     }
 
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
@@ -98,31 +122,58 @@ export async function scrapeLinkedInPosts(
   );
   const items: ApifyDatasetItem[] = await datasetRes.json();
 
-  if (!items.length) {
+  // Filter out non-post items (e.g. type: "document" wrappers)
+  const postItems = items.filter((item) => {
+    if (item.type === "document") return false;
+    const text = item.text || item.content;
+    return typeof text === "string" && text.trim().length > 0;
+  });
+
+  if (!postItems.length) {
     throw new Error("No posts found for this LinkedIn profile");
   }
 
-  // Extract author info from first item
-  const firstItem = items[0];
+  // Extract author from items — check all items for author data
+  let authorData: ApifyDatasetItem["author"] | null = null;
+  for (const item of items) {
+    if (item.author?.firstName || item.author?.lastName) {
+      authorData = item.author;
+      break;
+    }
+  }
+  if (!authorData && postItems[0]?.author) {
+    authorData = postItems[0].author;
+  }
+
+  const authorName = authorData
+    ? [authorData.firstName, authorData.lastName].filter(Boolean).join(" ").trim() || "Unknown"
+    : "Unknown";
+
   const author: ScrapedAuthor = {
-    name: firstItem.author?.name || "Unknown",
-    headline: firstItem.author?.headline || null,
-    avatar_url: firstItem.author?.profilePicture || null,
-    followers_count: firstItem.author?.followersCount || 0,
+    name: authorName,
+    headline: authorData?.occupation || null,
+    avatar_url: authorData?.picture || null,
+    followers_count: null, // Not available in this Apify actor
   };
 
-  // Extract posts
-  const posts: ScrapedPost[] = items
-    .filter((item) => item.text || item.content)
-    .map((item) => ({
-      content: (item.text || item.content || "").trim(),
-      url: item.url || "",
-      published_at: item.postedAt || null,
-      reactions_count: item.reactionsCount || 0,
-      comments_count: item.commentsCount || 0,
-      shares_count: item.sharesCount || 0,
-      raw_json: item as Record<string, unknown>,
-    }));
+  // Normalize Apify type values to match DB check constraint
+  const normalizeType = (type: string): string => {
+    if (type === "linkedinVideo") return "video";
+    if (["text", "image", "video", "article", "poll", "document"].includes(type)) return type;
+    return "other";
+  };
+
+  // Extract posts using correct Apify field names
+  const posts: ScrapedPost[] = postItems.map((item) => ({
+    content: (item.text || item.content || "").trim(),
+    url: item.url || "",
+    published_at: parseDate(item.postedAtISO, item.postedAtTimestamp),
+    reactions_count: item.numLikes ?? 0,
+    comments_count: item.numComments ?? 0,
+    shares_count: item.numShares ?? 0,
+    post_type: normalizeType((item.type as string) || "text"),
+    raw_json: item as Record<string, unknown>,
+  }));
 
   return { posts, author };
 }

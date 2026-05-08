@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ContentIdea, IdeaStatus, PatternMatch } from "@/lib/database.types";
+import { GeneratePostModal } from "./generate-post-modal";
 
 const PATTERN_COLORS: Record<string, string> = {
   topic: "bg-[#2563EB]/20 text-[#60A5FA] border-[#2563EB]/30",
@@ -25,23 +26,146 @@ const FORMAT_LABELS: Record<string, string> = {
   data_driven: "Data-Driven",
 };
 
-interface IdeasTabProps {
-  ideas: ContentIdea[];
-  onStatusChange: (id: string, status: IdeaStatus) => void;
+interface PostItem {
+  id: string;
+  content: string;
+  reactions_count: number;
+  comments_count: number;
+  shares_count: number;
+  linkedin_post_url: string;
+  published_at: string | null;
+  post_type: string;
 }
 
-export function IdeasTab({ ideas, onStatusChange }: IdeasTabProps) {
+interface EngagementStats {
+  total_posts: number;
+  total_reactions: number;
+  total_comments: number;
+  avg_reactions: number;
+  avg_comments: number;
+}
+
+interface IdeasTabProps {
+  ideas: ContentIdea[];
+  onStatusChange: (id: string, status: IdeaStatus) => Promise<void>;
+  engagementStats: EngagementStats | null;
+  topPosts: PostItem[];
+  allPosts: PostItem[];
+  winningFormula: string;
+}
+
+export function IdeasTab({ ideas, onStatusChange, engagementStats, topPosts, allPosts, winningFormula }: IdeasTabProps) {
+  const [generateModal, setGenerateModal] = useState<ContentIdea | null>(null);
+
   return (
     <div className="space-y-4 p-6">
+      {/* Engagement Stats Banner */}
+      {engagementStats && (
+        <div className="bg-[#111111] border border-[#1E1E1E] rounded-xl p-4">
+          <h3 className="text-sm font-medium text-[#F1F1F1] mb-3">Posts Analyzed</h3>
+          <div className="grid grid-cols-5 gap-4">
+            <div>
+              <p className="text-2xl font-semibold text-[#DA4E24]">{engagementStats.total_posts}</p>
+              <p className="text-xs text-[#666]">Posts</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#F1F1F1]">{engagementStats.total_reactions.toLocaleString()}</p>
+              <p className="text-xs text-[#666]">Total Reactions</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#F1F1F1]">{engagementStats.total_comments.toLocaleString()}</p>
+              <p className="text-xs text-[#666]">Total Comments</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#60A5FA]">{engagementStats.avg_reactions}</p>
+              <p className="text-xs text-[#666]">Avg Reactions</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-[#60A5FA]">{engagementStats.avg_comments}</p>
+              <p className="text-xs text-[#666]">Avg Comments</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top 5 Performing Posts */}
+      {topPosts.length > 0 && (
+        <div className="bg-[#111111] border border-[#1E1E1E] rounded-xl p-5">
+          <h3 className="text-sm font-medium text-[#F1F1F1] mb-3">Top 5 Performing Posts</h3>
+          <div className="space-y-3">
+            {topPosts.map((post, i) => (
+              <div key={post.id} className="bg-[#0A0A0A] rounded-lg p-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-xs font-semibold text-[#DA4E24] mt-0.5">#{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {post.published_at && (
+                        <span className="text-xs text-[#666]">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                      )}
+                      {post.post_type && post.post_type !== "text" && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2563EB]/20 text-[#60A5FA] border border-[#2563EB]/30">{post.post_type}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-[#BBB] line-clamp-2">
+                      {post.content.slice(0, 200)}{post.content.length > 200 ? "..." : ""}
+                    </p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-[#666]">
+                      <span className="text-[#FBBF24]">{post.reactions_count.toLocaleString()} reactions</span>
+                      <span>{post.comments_count.toLocaleString()} comments</span>
+                      <span>{post.shares_count.toLocaleString()} shares</span>
+                    </div>
+                  </div>
+                  {post.linkedin_post_url && (
+                    <a
+                      href={post.linkedin_post_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 text-[#666] hover:text-[#F1F1F1] transition-colors mt-1"
+                      title="View on LinkedIn"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Idea Cards */}
       {ideas.map((idea) => (
         <IdeaCard
           key={idea.id}
           idea={idea}
           onStatusChange={onStatusChange}
+          avgReactions={engagementStats?.avg_reactions}
+          avgComments={engagementStats?.avg_comments}
+          onGenerate={() => setGenerateModal(idea)}
         />
       ))}
 
       {ideas.length > 0 && <SummaryTable ideas={ideas} />}
+
+      {/* All Posts List */}
+      {allPosts.length > 0 && <AllPostsList posts={allPosts} />}
+
+      {/* Generate Post Modal */}
+      {generateModal && (
+        <GeneratePostModal
+          isOpen={true}
+          onClose={() => setGenerateModal(null)}
+          title={generateModal.title}
+          topic={generateModal.topic}
+          angle={generateModal.angle}
+          hookDraft={generateModal.hook_draft}
+          format={generateModal.format}
+          emotionalRegister={generateModal.emotional_register}
+          winningFormula={winningFormula}
+        />
+      )}
     </div>
   );
 }
@@ -49,16 +173,25 @@ export function IdeasTab({ ideas, onStatusChange }: IdeasTabProps) {
 function IdeaCard({
   idea,
   onStatusChange,
+  avgReactions,
+  avgComments,
+  onGenerate,
 }: {
   idea: ContentIdea;
-  onStatusChange: (id: string, status: IdeaStatus) => void;
+  onStatusChange: (id: string, status: IdeaStatus) => Promise<void>;
+  avgReactions?: number;
+  avgComments?: number;
+  onGenerate: () => void;
 }) {
   const [updating, setUpdating] = useState(false);
 
   async function handleStatus(status: IdeaStatus) {
     setUpdating(true);
-    onStatusChange(idea.id, status);
-    setUpdating(false);
+    try {
+      await onStatusChange(idea.id, status);
+    } finally {
+      setUpdating(false);
+    }
   }
 
   return (
@@ -68,7 +201,15 @@ function IdeaCard({
           {idea.position}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-[#F1F1F1] font-medium">{idea.title}</h3>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-[#F1F1F1] font-medium">{idea.title}</h3>
+            <button
+              onClick={onGenerate}
+              className="flex-shrink-0 text-xs px-3 py-1.5 bg-[#DA4E24] text-white rounded-lg hover:bg-[#DA4E24]/90 transition-colors whitespace-nowrap"
+            >
+              Generate Post &#8599;
+            </button>
+          </div>
           <p className="text-sm text-[#999] mt-1">{idea.topic}</p>
 
           {/* Pattern matches */}
@@ -100,6 +241,11 @@ function IdeaCard({
               {FORMAT_LABELS[idea.format] || idea.format}
             </span>
             <span>{idea.emotional_register}</span>
+            {(avgReactions !== undefined || avgComments !== undefined) && (
+              <span className="text-[#60A5FA]">
+                ~{avgReactions} reactions, ~{avgComments} comments avg
+              </span>
+            )}
             <span className="text-[#999]">{idea.trending_signal}</span>
           </div>
 
@@ -124,6 +270,65 @@ function IdeaCard({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AllPostsList({ posts }: { posts: PostItem[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const displayPosts = expanded ? posts : [];
+
+  return (
+    <div className="bg-[#111111] border border-[#1E1E1E] rounded-xl p-5">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center justify-between w-full text-left"
+      >
+        <h3 className="text-sm font-medium text-[#F1F1F1]">
+          {expanded ? "All Posts" : `Show all ${posts.length} posts`}
+        </h3>
+        <span className="text-xs text-[#666]">{expanded ? "Collapse" : "Expand"}</span>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 max-h-[500px] overflow-y-auto space-y-2">
+          {displayPosts.map((post) => (
+            <div key={post.id} className="bg-[#0A0A0A] rounded-lg p-3 flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  {post.published_at && (
+                    <span className="text-xs text-[#666]">{new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  )}
+                  {post.post_type && post.post_type !== "text" && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2563EB]/20 text-[#60A5FA] border border-[#2563EB]/30">{post.post_type}</span>
+                  )}
+                </div>
+                <p className="text-sm text-[#BBB]">
+                  {post.content.slice(0, 150)}{post.content.length > 150 ? "..." : ""}
+                </p>
+                <div className="flex items-center gap-4 mt-2 text-xs text-[#666]">
+                  <span className="text-[#DA4E24]">{post.reactions_count.toLocaleString()} reactions</span>
+                  <span>{post.comments_count.toLocaleString()} comments</span>
+                  <span>{post.shares_count.toLocaleString()} shares</span>
+                </div>
+              </div>
+              {post.linkedin_post_url && (
+                <a
+                  href={post.linkedin_post_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 text-[#666] hover:text-[#F1F1F1] transition-colors mt-1"
+                  title="View on LinkedIn"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                  </svg>
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

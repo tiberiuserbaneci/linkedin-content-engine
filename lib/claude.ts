@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Post, ContentAnalysis, ContentIdea, PatternMatch } from "./database.types";
+import type { ContentAnalysis, ContentIdea, PatternMatch } from "./database.types";
 
 const MODEL = "claude-sonnet-4-20250514";
 
@@ -7,22 +7,26 @@ function getClient() {
   return new Anthropic();
 }
 
+interface LightPost {
+  content: string;
+  reactions_count: number;
+  comments_count: number;
+}
+
 interface TieredPost {
   content: string;
   reactions: number;
   comments: number;
   tier: "TOP_PERFORMER" | "BASELINE" | "LOW_PERFORMER";
-  word_count: number;
-  post_type: string;
 }
 
-function tierPosts(posts: Post[]): TieredPost[] {
+function tierPosts(posts: LightPost[]): TieredPost[] {
   const sorted = [...posts].sort((a, b) => b.reactions_count - a.reactions_count);
   const top30 = Math.ceil(sorted.length * 0.3);
   const bottom30 = Math.floor(sorted.length * 0.3);
 
   return sorted.map((post, i) => ({
-    content: post.content,
+    content: post.content.slice(0, 300),
     reactions: post.reactions_count,
     comments: post.comments_count,
     tier:
@@ -31,14 +35,20 @@ function tierPosts(posts: Post[]): TieredPost[] {
         : i >= sorted.length - bottom30
         ? ("LOW_PERFORMER" as const)
         : ("BASELINE" as const),
-    word_count: post.word_count,
-    post_type: post.post_type,
   }));
 }
 
 const ANALYSIS_PROMPT = `You are an expert LinkedIn content strategist. Analyse the following LinkedIn posts from a single creator. Each post is labelled with its performance tier: TOP_PERFORMER (top 30% by reactions), BASELINE (middle 40%), or LOW_PERFORMER (bottom 30%).
 
 Your task: Generate a comprehensive Winning Content Profile with exactly these 10 sections. Be specific, data-driven, and actionable.
+
+CRITICAL RULES FOR HOOK ANALYSIS:
+- For "top_hooks": You MUST copy-paste the EXACT opening line (first sentence) from actual TOP_PERFORMER posts verbatim. Do NOT paraphrase or summarize. Quote them exactly as written.
+- For "patterns": Describe the pattern AND include the EXACT verbatim text from the post that exemplifies it in quotes.
+- For "opening_patterns" in structural_dna: Quote EXACT opening lines from top posts.
+
+CRITICAL RULE FOR EXAMPLE POSTS:
+- Every section (hook_formula, emotional_playbook, winning_format, structural_dna, specificity, close_patterns, what_doesnt_work) MUST include an "example_posts" array with exactly 3 brief post opener suggestions (1-2 sentences each) that follow the winning patterns described in that section. These should be NEW, original suggestions that a creator could use as inspiration.
 
 Respond with valid JSON matching this exact structure:
 {
@@ -53,48 +63,55 @@ Respond with valid JSON matching this exact structure:
     }
   ],
   "hook_formula": {
-    "patterns": ["pattern 1 with example", "pattern 2 with example"],
-    "top_hooks": ["actual hook from top posts"],
+    "patterns": ["Pattern name: 'EXACT QUOTED TEXT from post' — explanation of why it works"],
+    "top_hooks": ["EXACT verbatim first sentence copied from a top performing post", "EXACT verbatim first sentence from another top post"],
     "what_works": "summary of effective hook strategies",
-    "what_fails": "summary of ineffective hook strategies"
+    "what_fails": "summary of ineffective hook strategies",
+    "example_posts": ["Example post opener following this hook pattern 1", "Example post opener 2", "Example post opener 3"]
   },
   "emotional_playbook": {
     "primary_emotions": ["emotion1", "emotion2"],
     "emotional_arc": "description of typical emotional journey in posts",
     "top_performer_emotions": ["emotions that drive top posts"],
-    "avoid": ["emotions that underperform"]
+    "avoid": ["emotions that underperform"],
+    "example_posts": ["Example post opener with this emotional register 1", "Example 2", "Example 3"]
   },
   "winning_format": {
     "best_formats": [{"format": "format name", "avg_engagement": 200, "frequency": 0.3}],
     "optimal_length": {"min_words": 100, "max_words": 300, "sweet_spot": 200},
-    "structure_notes": "how the best posts are structured"
+    "structure_notes": "how the best posts are structured",
+    "example_posts": ["Example post opener in winning format 1", "Example 2", "Example 3"]
   },
   "structural_dna": {
-    "opening_patterns": ["how top posts start"],
+    "opening_patterns": ["EXACT verbatim opening line from a top post — explanation"],
     "body_patterns": ["how top posts develop their message"],
     "paragraph_style": "short/medium/long paragraphs",
     "use_of_lists": true,
     "use_of_whitespace": "description",
-    "signature_elements": ["unique structural elements"]
+    "signature_elements": ["unique structural elements"],
+    "example_posts": ["Example post opener following structural DNA 1", "Example 2", "Example 3"]
   },
   "specificity": {
     "data_usage": "how often and how they use numbers/data",
     "story_vs_advice": "ratio and style",
     "personal_vs_general": "how personal the content is",
     "examples_style": "how they use examples",
-    "specificity_score": 8
+    "specificity_score": 8,
+    "example_posts": ["Example post opener with right specificity level 1", "Example 2", "Example 3"]
   },
   "close_patterns": {
     "cta_styles": ["call to action patterns"],
     "question_endings": ["example questions used to close"],
-    "best_performing_closes": ["actual closes from top posts"],
-    "engagement_drivers": "what drives comments"
+    "best_performing_closes": ["EXACT verbatim close from a top post"],
+    "engagement_drivers": "what drives comments",
+    "example_posts": ["Example post with this close pattern 1", "Example 2", "Example 3"]
   },
   "what_doesnt_work": {
     "underperforming_topics": ["topics that get low engagement"],
     "failed_formats": ["formats that don't work for this creator"],
     "common_mistakes": ["patterns seen in low performers"],
-    "avoid_list": ["specific things to avoid"]
+    "avoid_list": ["specific things to avoid"],
+    "example_posts": ["Example of what TO DO instead (corrected version) 1", "Example 2", "Example 3"]
   },
   "winning_formula": "A single paragraph capturing the exact recipe for this creator's best content",
   "winning_checklist": [
@@ -107,7 +124,7 @@ POSTS DATA:
 `;
 
 export async function analyzeProfile(
-  posts: Post[]
+  posts: LightPost[]
 ): Promise<Omit<ContentAnalysis, "id" | "profile_id" | "created_at">> {
   const client = getClient();
   const tieredPosts = tierPosts(posts);
@@ -115,13 +132,13 @@ export async function analyzeProfile(
   const postsText = tieredPosts
     .map(
       (p, i) =>
-        `--- POST ${i + 1} [${p.tier}] (${p.reactions} reactions, ${p.comments} comments, ${p.word_count} words, type: ${p.post_type}) ---\n${p.content}`
+        `--- POST ${i + 1} [${p.tier}] (${p.reactions} reactions, ${p.comments} comments) ---\n${p.content}`
     )
     .join("\n\n");
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 8000,
+    max_tokens: 4000,
     messages: [
       {
         role: "user",
@@ -159,87 +176,65 @@ export async function analyzeProfile(
   };
 }
 
-const IDEAS_PROMPT = `You are an expert LinkedIn content strategist. Based on the Winning Content Profile below, generate 10 content ideas calibrated to this creator's winning patterns.
+interface RealPost {
+  content: string;
+  reactions_count: number;
+  comments_count: number;
+}
 
-IMPORTANT RULES:
-1. First, use the web_search tool to find 3-5 trending topics in the creator's space
-2. Each idea MUST match at least 3 out of 5 pattern types: topic cluster, format, hook style, emotion, specificity level
-3. Each hook_draft must be a REAL, USABLE first sentence (not a placeholder)
-4. Each idea should leverage a trending signal from your research
+const IDEAS_PROMPT_FAST = `Generate 10 LinkedIn content ideas for a creator. Study their winning formula AND their real top-performing posts below carefully. Your ideas must replicate their EXACT tone, voice, hook style, and writing patterns.
 
-WINNING CONTENT PROFILE:
+WINNING FORMULA:
 `;
 
-const IDEAS_SCHEMA = `
-Respond with valid JSON:
-{
-  "ideas": [
-    {
-      "position": 1,
-      "title": "Short compelling title",
-      "topic": "The core topic",
-      "pattern_matches": [
-        {"type": "topic", "label": "matching cluster name"},
-        {"type": "format", "label": "matching format"},
-        {"type": "hook", "label": "hook pattern used"},
-        {"type": "emotion", "label": "primary emotion"},
-        {"type": "specificity", "label": "specificity element"}
-      ],
-      "angle": "The unique angle or perspective for this piece",
-      "hook_draft": "The actual first sentence of the post, ready to use",
-      "format": "narrative|how_to|opinion|data_driven",
-      "emotional_register": "The emotional tone",
-      "trending_signal": "Why this is timely - reference to trend found"
-    }
-  ]
-}`;
+const IDEAS_SUFFIX = `
+
+Each idea must have: position (1-10), title, topic, pattern_matches (array of {type, label} where type is one of: topic/format/hook/emotion/specificity), angle, hook_draft (a REAL usable first sentence that matches this creator's exact voice and hook style — study the real posts above), format (narrative/how_to/opinion/data_driven), emotional_register, trending_signal.
+
+CRITICAL: The hook_draft must sound like it was written by THIS creator. Copy their sentence structure, tone, and style from the real posts above. Do NOT write generic LinkedIn hooks.
+
+Respond with ONLY valid JSON, no markdown:
+{"ideas":[{...}]}`;
 
 export async function generateIdeas(
   analysis: ContentAnalysis,
-  researchSpace?: string
+  researchSpace?: string,
+  realPosts?: RealPost[]
 ): Promise<Omit<ContentIdea, "id" | "analysis_id" | "profile_id" | "created_at">[]> {
   const client = getClient();
 
-  const profileSummary = JSON.stringify(
-    {
-      overview: analysis.overview,
-      topic_clusters: analysis.topic_clusters,
-      hook_formula: analysis.hook_formula,
-      emotional_playbook: analysis.emotional_playbook,
-      winning_format: analysis.winning_format,
-      structural_dna: analysis.structural_dna,
-      specificity: analysis.specificity,
-      close_patterns: analysis.close_patterns,
-      winning_formula: analysis.winning_formula,
-      winning_checklist: analysis.winning_checklist,
-    },
-    null,
-    2
-  );
-
-  const spaceNote = researchSpace
-    ? `\n\nFOCUS AREA FOR TRENDING RESEARCH: ${researchSpace}`
+  // Only send winning_formula + top 3 topic cluster names
+  const topicNames = Array.isArray(analysis.topic_clusters)
+    ? (analysis.topic_clusters as { name: string }[]).slice(0, 3).map((c) => c.name).join(", ")
     : "";
+
+  const spaceNote = researchSpace ? `\nFocus area: ${researchSpace}` : "";
+
+  // Include real top posts for voice/tone matching (truncate to stay within limits)
+  let realPostsSection = "";
+  if (realPosts && realPosts.length > 0) {
+    const postTexts = realPosts
+      .slice(0, 10)
+      .map((p, i) => `--- TOP POST ${i + 1} (${p.reactions_count} reactions, ${p.comments_count} comments) ---\n${p.content.slice(0, 500)}`)
+      .join("\n\n");
+    realPostsSection = `\n\nREAL TOP-PERFORMING POSTS (study these for voice, tone, hooks):\n${postTexts}`;
+  }
+
+  const prompt =
+    IDEAS_PROMPT_FAST +
+    analysis.winning_formula +
+    `\n\nTop topics: ${topicNames}` +
+    realPostsSection +
+    spaceNote +
+    IDEAS_SUFFIX;
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 8000,
-    tools: [
-      {
-        type: "web_search_20250305",
-        name: "web_search",
-        max_uses: 5,
-      },
-    ],
+    max_tokens: 3000,
     messages: [
       {
         role: "user",
-        content:
-          IDEAS_PROMPT +
-          profileSummary +
-          spaceNote +
-          "\n\n" +
-          IDEAS_SCHEMA,
+        content: prompt,
       },
     ],
   });

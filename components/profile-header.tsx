@@ -49,7 +49,9 @@ export function ProfileHeader({ profile }: { profile: ProfileWithStats }) {
           <p className="text-sm text-[#999] mt-0.5 truncate">{profile.headline}</p>
         )}
         <div className="flex items-center gap-4 mt-1 text-xs text-[#666]">
-          <span>{profile.followers_count.toLocaleString()} followers</span>
+          {profile.followers_count > 0 && (
+            <span>{profile.followers_count.toLocaleString()} followers</span>
+          )}
           <span>{profile.posts_count} posts</span>
           {profile.ideas_count > 0 && (
             <span>{profile.ideas_count} ideas</span>

@@ -36,9 +36,32 @@ export async function GET(
       throw new Error(`Failed to fetch ideas: ${ideasError.message}`);
     }
 
+    // Get all posts for this profile (by reactions)
+    const { data: allPosts } = await supabase
+      .from("posts")
+      .select("id, content, reactions_count, comments_count, shares_count, linkedin_post_url, published_at, post_type")
+      .eq("profile_id", id)
+      .order("reactions_count", { ascending: false });
+
+    const topPosts = (allPosts || []).slice(0, 5);
+
+    const totalReactions = allPosts?.reduce((sum, p) => sum + p.reactions_count, 0) || 0;
+    const totalComments = allPosts?.reduce((sum, p) => sum + p.comments_count, 0) || 0;
+    const avgReactions = allPosts?.length ? Math.round(totalReactions / allPosts.length) : 0;
+    const avgComments = allPosts?.length ? Math.round(totalComments / allPosts.length) : 0;
+
     return NextResponse.json({
       analysis,
       ideas: ideas || [],
+      top_posts: topPosts,
+      all_posts: allPosts || [],
+      engagement_stats: {
+        total_posts: allPosts?.length || 0,
+        total_reactions: totalReactions,
+        total_comments: totalComments,
+        avg_reactions: avgReactions,
+        avg_comments: avgComments,
+      },
     });
   } catch (error) {
     console.error("Analysis fetch error:", error);
