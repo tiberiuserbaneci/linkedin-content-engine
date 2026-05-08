@@ -3,6 +3,15 @@ import type { ContentAnalysis, ContentIdea, PatternMatch } from "./database.type
 
 const MODEL = "claude-sonnet-4-6";
 
+function extractJSON(text: string): unknown {
+  let str = text.trim();
+  // Strip markdown code fences (handles truncated responses too)
+  if (str.startsWith("```")) {
+    str = str.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+  }
+  return JSON.parse(str);
+}
+
 function getClient() {
   return new Anthropic();
 }
@@ -135,7 +144,7 @@ export async function analyzeProfile(
 
   const response = await client.beta.messages.create({
     model: MODEL,
-    max_tokens: 2500,
+    max_tokens: 4000,
     betas: ["prompt-caching-2024-07-31"],
     system: [
       {
@@ -160,9 +169,8 @@ export async function analyzeProfile(
     })
     .join("");
 
-  // Extract JSON from the response (handle markdown code blocks)
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
-  const parsed = JSON.parse(jsonMatch[1]!.trim());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parsed = extractJSON(text) as any;
 
   return {
     posts_analysed: posts.length,
@@ -253,8 +261,8 @@ export async function generateIdeas(
     })
     .join("");
 
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
-  const parsed = JSON.parse(jsonMatch[1]!.trim());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parsed = extractJSON(text) as any;
 
   return parsed.ideas.map(
     (idea: {
