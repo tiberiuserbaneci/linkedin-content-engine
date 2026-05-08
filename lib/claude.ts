@@ -3,13 +3,53 @@ import type { ContentAnalysis, ContentIdea, PatternMatch } from "./database.type
 
 const MODEL = "claude-sonnet-4-6";
 
+function repairTruncatedJSON(str: string): string {
+  // Close unterminated strings
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < str.length; i++) {
+    if (escaped) { escaped = false; continue; }
+    if (str[i] === "\\") { escaped = true; continue; }
+    if (str[i] === '"') inString = !inString;
+  }
+  if (inString) str += '"';
+
+  // Remove trailing partial key-value (after last comma outside a complete value)
+  str = str.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, "");
+  str = str.replace(/,\s*$/, "");
+
+  // Count and close open brackets/braces
+  let braces = 0, brackets = 0;
+  inString = false;
+  escaped = false;
+  for (let i = 0; i < str.length; i++) {
+    if (escaped) { escaped = false; continue; }
+    if (str[i] === "\\") { escaped = true; continue; }
+    if (str[i] === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (str[i] === "{") braces++;
+    if (str[i] === "}") braces--;
+    if (str[i] === "[") brackets++;
+    if (str[i] === "]") brackets--;
+  }
+  while (brackets-- > 0) str += "]";
+  while (braces-- > 0) str += "}";
+
+  return str;
+}
+
 function extractJSON(text: string): unknown {
   let str = text.trim();
-  // Strip markdown code fences (handles truncated responses too)
   if (str.startsWith("```")) {
     str = str.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
   }
-  return JSON.parse(str);
+  try {
+    return JSON.parse(str);
+  } catch {
+    // Attempt repair on truncated JSON
+    const repaired = repairTruncatedJSON(str);
+    return JSON.parse(repaired);
+  }
 }
 
 function getClient() {

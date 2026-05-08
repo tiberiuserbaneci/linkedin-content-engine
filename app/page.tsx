@@ -111,24 +111,24 @@ export default function Dashboard() {
         body: JSON.stringify({ profile_id: profileId }),
       });
       if (!profileRes.ok) {
-        const d = await profileRes.json();
+        const d = await profileRes.json().catch(() => ({ error: "Profile analysis failed" }));
         throw new Error(d.error || "Profile analysis failed");
       }
       const { analysis_id } = await profileRes.json();
 
-      const ideasRes = await fetch("/api/analyze/ideas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analysis_id, profile_id: profileId }),
-      });
-      if (!ideasRes.ok) {
-        const d = await ideasRes.json();
-        throw new Error(d.error || "Ideas generation failed");
-      }
+      // Ideas generation is non-fatal
+      try {
+        await fetch("/api/analyze/ideas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ analysis_id, profile_id: profileId }),
+        });
+      } catch { /* ideas failure is non-fatal */ }
 
       await fetchAnalysis(profileId);
     } catch (err) {
       setAnalysisError(err instanceof Error ? err.message : "Analysis failed");
+      await fetchAnalysis(profileId);
     } finally {
       setAnalysisLoading(false);
     }

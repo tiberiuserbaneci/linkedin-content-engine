@@ -58,37 +58,35 @@ export function AddProfileModal({ isOpen, onClose, onComplete }: AddProfileModal
         throw new Error("No profile_id returned from scrape");
       }
 
-      // Step 2: Build winning profile (no ideas)
+      // Step 2: Build winning profile (non-fatal — posts are already saved)
       setStep("building_profile");
-      const profileRes = await fetch("/api/analyze/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile_id }),
-      });
+      let analysis_id: string | null = null;
+      try {
+        const profileRes = await fetch("/api/analyze/profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile_id }),
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          analysis_id = profileData.analysis_id;
+        }
+      } catch { /* analysis failure is non-fatal */ }
 
-      if (!profileRes.ok) {
-        const data = await profileRes.json().catch(() => ({ error: "Profile analysis failed" }));
-        throw new Error(data.error || "Failed to build winning profile");
-      }
-
-      const profileData = await profileRes.json();
-      const analysis_id = profileData.analysis_id;
-
-      // Step 3: Generate ideas
-      setStep("generating_ideas");
-      const ideasRes = await fetch("/api/analyze/ideas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          analysis_id,
-          profile_id,
-          research_space: researchSpace || undefined,
-        }),
-      });
-
-      if (!ideasRes.ok) {
-        const data = await ideasRes.json().catch(() => ({ error: "Ideas generation failed" }));
-        throw new Error(data.error || "Failed to generate ideas");
+      // Step 3: Generate ideas (non-fatal, only if analysis succeeded)
+      if (analysis_id) {
+        setStep("generating_ideas");
+        try {
+          await fetch("/api/analyze/ideas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              analysis_id,
+              profile_id,
+              research_space: researchSpace || undefined,
+            }),
+          });
+        } catch { /* ideas failure is non-fatal */ }
       }
 
       setStep("done");
